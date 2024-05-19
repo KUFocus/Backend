@@ -38,3 +38,4 @@ out/
 
 ### AWS ###
 src/main/resources/application-aws.properties
+logkey.pem
