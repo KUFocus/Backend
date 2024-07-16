@@ -2,6 +2,7 @@ package org.focus.logmeet.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.focus.logmeet.domain.enums.Status;
 import org.focus.logmeet.domain.util.BaseTimeEntity;
 
 import java.util.List;
@@ -24,11 +25,16 @@ public class User extends BaseTimeEntity {
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private List<Schedule> schedules;
 
+    @Column(length = 50, nullable = false)
+    private String email;
+
     @Column(length = 30, nullable = false)
     private String name;
 
     @Column(length = 500)
     private String content;
 
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private Status status = Status.ACTIVE;
 }
