@@ -17,9 +17,8 @@ public class Project extends BaseTimeEntity {
     @Column(name = "project_id")
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User user;
+    @OneToMany(mappedBy = "project", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<UserProject> userProjects;
 
     @OneToMany(mappedBy = "project", fetch = FetchType.LAZY)
     private List<Minutes> minutes;
@@ -29,6 +28,5 @@ public class Project extends BaseTimeEntity {
 
     @Column(length = 500)
     private String content;
-
     private String status;
 }
