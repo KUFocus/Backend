@@ -1,7 +1,6 @@
 package org.focus.logmeet.common.response;
 
 import lombok.Getter;
-import org.springframework.http.HttpStatus;
 
 @Getter
 public enum BaseExceptionResponseStatus implements ResponseStatus {
@@ -24,13 +23,16 @@ public enum BaseExceptionResponseStatus implements ResponseStatus {
 
     // User 오류
     EMAIL_REQUIRED(false, 4000, "이메일을 입력해주세요."),
-    INVALID_EMAIL_FORMAT(false, 4000, "잘못된 이메일을 양식입니다."),
-    DUPLICATE_EMAIL(false, 4001, "이미 존재하는 이메일입니다."),
-    USER_NOT_FOUND(false, 4002, "존재하지 않는 회원입니다."),
-    PASSWORD_NO_MATCH(false, 4003, "비밀번호가 일치하지 않습니다."),
-    INVALID_USER_STATUS(false, 4004, "잘못된 회원 status 값입니다."),
-    USER_NOT_LOGGED_IN(false, 4005, "로그인하지 않은 사용자입니다."),
-    SAME_AS_OLD_PASSWORD(false, 4006, "새 비밀번호는 기존 비밀번호와 달라야 합니다.");
+    INVALID_EMAIL_FORMAT(false, 4001, "잘못된 이메일을 양식입니다."),
+    DUPLICATE_EMAIL(false, 4002, "이미 존재하는 이메일입니다."),
+    PASSWORD_REQUIRED(false, 4003, "비밀번호를 입력해주세요."),
+    PASSWORD_TOO_SHORT(false, 4004, "8자리 이상의 비밀번호를 입력해주세요."),
+    PASSWORD_INVALID_FORMAT(false, 4005, "잘못된 비밀번호 양식입니다."),
+    USER_NOT_FOUND(false, 4006, "존재하지 않는 회원입니다."),
+    PASSWORD_NO_MATCH(false, 4007, "비밀번호가 일치하지 않습니다."),
+    INVALID_USER_STATUS(false, 4008, "잘못된 회원 status 값입니다."),
+    USER_NOT_LOGGED_IN(false, 4009, "로그인하지 않은 사용자입니다."),
+    SAME_AS_OLD_PASSWORD(false, 4010, "새 비밀번호는 기존 비밀번호와 달라야 합니다.");
 
 
     private final boolean isSuccess;
