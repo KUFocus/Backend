@@ -13,7 +13,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-import static org.focus.logmeet.common.response.BaseResponseStatus.EXPIRED_TOKEN;
+import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.EXPIRED_TOKEN;
 
 @Slf4j
 @RequiredArgsConstructor

@@ -1,26 +1,42 @@
 package org.focus.logmeet.common.response;
 
-import lombok.Builder;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
+
+import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.SUCCESS;
 
 @Getter
-@NoArgsConstructor
+@JsonPropertyOrder({"isSuccess", "code", "message", "result"})
 public class BaseResponse<T> {
 
-    private boolean isSuccess;
+    private final boolean isSuccess;
 
-    private String message;
+    private final String message;
 
-    private int code;
+    private final int code;
 
-    private T data;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private final T result;
 
-    @Builder
-    public BaseResponse(boolean isSuccess, String message, int code, T data) {
-        this.isSuccess = isSuccess;
-        this.message = message;
-        this.code = code;
-        this.data = data;
+    public BaseResponse(T result) {
+        this.isSuccess = SUCCESS.getIsSuccess();
+        this.code = SUCCESS.getCode();
+        this.message = SUCCESS.getMessage();
+        this.result = result;
+    }
+
+    public BaseResponse(BaseExceptionResponseStatus status, T result) {
+        this.isSuccess = status.getIsSuccess();
+        this.code = status.getCode();
+        this.message = status.getMessage();
+        this.result = result;
+    }
+
+    public BaseResponse(BaseExceptionResponseStatus status) {
+        this.isSuccess = status.getIsSuccess();
+        this.code = status.getCode();
+        this.message = status.getMessage();
+        this.result = null;
     }
 }

@@ -22,7 +22,7 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.Optional;
 
-import static org.focus.logmeet.common.response.BaseResponseStatus.*;
+import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
 
 @Slf4j
 @Component
