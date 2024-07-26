@@ -1,6 +1,5 @@
 package org.focus.logmeet.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.focus.logmeet.controller.dto.auth.AuthLoginRequest;
@@ -48,7 +47,7 @@ class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("회원 가입 요청이 성공적으로 처리됨")
+    @DisplayName("회원가입 요청이 성공적으로 처리됨")
     void signUp() throws Exception {
         //given
         AuthSignupRequest request = new AuthSignupRequest("test@example.com", "password123");

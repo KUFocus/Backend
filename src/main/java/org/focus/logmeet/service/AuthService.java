@@ -10,6 +10,7 @@ import org.focus.logmeet.controller.dto.auth.AuthSignupResponse;
 import org.focus.logmeet.domain.User;
 import org.focus.logmeet.repository.UserRepository;
 import org.focus.logmeet.security.jwt.JwtProvider;
+import org.focus.logmeet.security.jwt.JwtTokenDto;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,11 +51,9 @@ public class AuthService {
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new BaseException(PASSWORD_NO_MATCH);
         }
+        JwtTokenDto allToken = jwtProvider.createAllToken(user.getEmail());
 
-        String accessToken = jwtProvider.createToken(user.getEmail(), "Access");
-        String refreshToken = jwtProvider.createToken(user.getEmail(), "Refresh");
-
-        return new AuthLoginResponse(accessToken, refreshToken);
+        return new AuthLoginResponse(allToken.getAccessToken(), allToken.getRefreshToken());
     }
 
     private void validateEmail(String email) {
