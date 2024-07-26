@@ -1,6 +1,5 @@
 package org.focus.logmeet.common.exeption;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.focus.logmeet.common.response.BaseExceptionResponseStatus;

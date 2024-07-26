@@ -8,7 +8,6 @@ import org.focus.logmeet.controller.dto.auth.AuthLoginResponse;
 import org.focus.logmeet.controller.dto.auth.AuthSignupRequest;
 import org.focus.logmeet.controller.dto.auth.AuthSignupResponse;
 import org.focus.logmeet.service.AuthService;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
