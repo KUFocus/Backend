@@ -21,7 +21,7 @@ public class AuthController {
 
     private final AuthService authService;
 
-    @PostMapping("/signup")
+    @PostMapping("/signup") //TODO: 이메일 검증 로직 고려
     public BaseResponse<AuthSignupResponse> signup(@RequestBody AuthSignupRequest request) {
         log.info("User sign-up request: {}", request.getEmail());
         AuthSignupResponse response = authService.signup(request);

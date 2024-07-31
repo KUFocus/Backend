@@ -75,7 +75,7 @@ public class AuthService {
         if (password.length() < 8) {
             throw new BaseException(PASSWORD_TOO_SHORT);
         }
-        if (!password.matches("^(?=.*[0-9!@#$%^&*]).{8,}$")) {
+        if (!password.matches("^(?=.*[0-9!@#$%^&*]).{8,}$")) { //TODO: 문자와 숫자 포함 8자리 이상 수정
             throw new BaseException(PASSWORD_INVALID_FORMAT);
         }
     }
