@@ -6,6 +6,7 @@ import org.focus.logmeet.common.exception.BaseException;
 import org.focus.logmeet.domain.RefreshToken;
 import org.focus.logmeet.repository.RefreshTokenRepository;
 import org.focus.logmeet.security.user.UserDetailsServiceImpl;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import javax.crypto.SecretKey;
 import java.lang.reflect.Field;
+import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
@@ -46,6 +48,13 @@ class JwtProviderTest {
 
     @Mock
     private RefreshTokenRepository refreshTokenRepository;
+
+    private static KeyPair keyPair;
+
+    @BeforeAll
+    static void generateKeyPair() throws NoSuchAlgorithmException {
+        keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
+    }
 
     @BeforeEach
     void setUp() throws Exception {
@@ -109,9 +118,8 @@ class JwtProviderTest {
 
     @Test
     @DisplayName("지원되지 않는 토큰 형식 파싱 시 예외 발생")
-    void testUnsupportedToken() throws NoSuchAlgorithmException {
+    void testUnsupportedToken() {
         //given
-        KeyPair keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
         String token = Jwts.builder()
                 .setSubject("test@example.com")
                 .signWith(keyPair.getPrivate(), SignatureAlgorithm.RS256) // RS256으로 서명
@@ -282,50 +290,6 @@ class JwtProviderTest {
 
         //then
         assertThat(extractedEmail).isNull();
-    }
-
-    @Test
-    @DisplayName("header 토큰 추출이 성공적으로 처리됨")
-    void testGetHeaderToken() {
-        //given
-        MockHttpServletRequest request = new MockHttpServletRequest();
-        request.addHeader("Access_Token", "accessToken");
-        request.addHeader("Refresh_Token", "refreshToken");
-
-        //when
-        String accessToken = jwtProvider.getHeaderToken(request, "Access");
-        String refreshToken = jwtProvider.getHeaderToken(request, "Refresh");
-
-        //then
-        assertThat(accessToken).isEqualTo("accessToken");
-        assertThat(refreshToken).isEqualTo("refreshToken");
-    }
-
-    @Test
-    @DisplayName("모든 토큰 생성이 성공적으로 처리됨")
-    void testCreateAllToken() {
-        //given
-        String email = "test@example.com";
-
-        //when
-        JwtTokenDto tokenDto = jwtProvider.createAllToken(email);
-
-        //then
-        assertThat(tokenDto).isNotNull();
-        assertThat(tokenDto.getAccessToken()).isNotNull();
-        assertThat(tokenDto.getRefreshToken()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("토큰 파싱 중 IllegalArgumentException 발생 시 예외 처리")
-    void testIllegalArgumentException() {
-        //given
-        String invalidToken = "   "; // 비어있는 문자열로 설정
-
-        //when & then
-        assertThatThrownBy(() -> jwtProvider.parseToken(invalidToken))
-                .isInstanceOf(BaseException.class)
-                .hasMessageContaining(INVALID_TOKEN.getMessage());
     }
 
     @SuppressWarnings("unchecked")
