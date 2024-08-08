@@ -1,16 +1,19 @@
-package org.focus.logmeet.common.exeption;
+package org.focus.logmeet.common.exception;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
 import org.focus.logmeet.common.response.BaseExceptionResponseStatus;
 
-@Data
-@NoArgsConstructor
+@Getter
 public class BaseException extends RuntimeException {
     public BaseExceptionResponseStatus status;
 
     public BaseException(BaseExceptionResponseStatus status) {
         super(status.getMessage());
+        this.status = status;
+    }
+
+    public BaseException(BaseExceptionResponseStatus status, String message) {
+        super(message);
         this.status = status;
     }
 }

@@ -7,7 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.focus.logmeet.common.exeption.BaseException;
+import org.focus.logmeet.common.exception.BaseException;
 import org.focus.logmeet.domain.RefreshToken;
 import org.focus.logmeet.repository.RefreshTokenRepository;
 import org.focus.logmeet.security.user.UserDetailsServiceImpl;

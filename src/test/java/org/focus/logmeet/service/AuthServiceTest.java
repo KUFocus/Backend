@@ -1,6 +1,6 @@
 package org.focus.logmeet.service;
 
-import org.focus.logmeet.common.exeption.BaseException;
+import org.focus.logmeet.common.exception.BaseException;
 import org.focus.logmeet.controller.dto.auth.AuthLoginRequest;
 import org.focus.logmeet.controller.dto.auth.AuthLoginResponse;
 import org.focus.logmeet.controller.dto.auth.AuthSignupRequest;
@@ -45,7 +45,7 @@ class AuthServiceTest { // TODO: 중복된 부분 SetUp 필요
     @DisplayName("회원가입이 성공적으로 처리됨")
     void testSignUp() {
         //given
-        AuthSignupRequest request = new AuthSignupRequest("test@example.com", "password123");
+        AuthSignupRequest request = new AuthSignupRequest("test@example.com", "password123", "홍길동");
 
         when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
         when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
@@ -91,39 +91,10 @@ class AuthServiceTest { // TODO: 중복된 부분 SetUp 필요
     }
 
     @Test
-    @DisplayName("회원가입 시 이메일이 null이거나 비어있으면 예외가 발생함")
-    void testSignupWithNullOrEmptyEmail() {
-        //given
-        AuthSignupRequest requestWithNullEmail = new AuthSignupRequest(null, "password123");
-        AuthSignupRequest requestWithEmptyEmail = new AuthSignupRequest("", "password123");
-
-        //when & then
-        assertThatThrownBy(() -> authService.signup(requestWithNullEmail))
-                .isInstanceOf(BaseException.class)
-                .hasMessageContaining(EMAIL_REQUIRED.getMessage());
-
-        assertThatThrownBy(() -> authService.signup(requestWithEmptyEmail))
-                .isInstanceOf(BaseException.class)
-                .hasMessageContaining(EMAIL_REQUIRED.getMessage());
-    }
-
-    @Test
-    @DisplayName("회원가입 시 이메일 형식이 올바르지 않으면 예외가 발생함")
-    void testSignupWithInvalidEmail() {
-        //given
-        AuthSignupRequest invalidEmail = new AuthSignupRequest("invalid-email", "password123");
-
-        //when & then
-        assertThatThrownBy(() -> authService.signup(invalidEmail))
-                .isInstanceOf(BaseException.class)
-                .hasMessageContaining(INVALID_EMAIL_FORMAT.getMessage());
-    }
-
-    @Test
     @DisplayName("회원가입 시 중복된 이메일 예외가 발생함")
     void testSignupWithDuplicateEmail() {
         //given
-        AuthSignupRequest request = new AuthSignupRequest("test@example.com", "password123");
+        AuthSignupRequest request = new AuthSignupRequest("test@example.com", "password123", "홍길동");
 
         when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(User.builder().build()));
 
@@ -131,47 +102,6 @@ class AuthServiceTest { // TODO: 중복된 부분 SetUp 필요
         assertThatThrownBy(() -> authService.signup(request))
                 .isInstanceOf(BaseException.class)
                 .hasMessageContaining(DUPLICATE_EMAIL.getMessage());
-    }
-
-    @Test
-    @DisplayName("회원가입 시 비밀번호가 null이거나 비어있으면 예외가 발생함")
-    void testSignupWithNullOrEmptyPassword() {
-        //given
-        AuthSignupRequest requestWithNullPassword = new AuthSignupRequest("test@example.com", null);
-        AuthSignupRequest requestWithEmptyPassword = new AuthSignupRequest("test@example.com", "");
-
-        //when & then
-        assertThatThrownBy(() -> authService.signup(requestWithNullPassword))
-                .isInstanceOf(BaseException.class)
-                .hasMessageContaining(PASSWORD_REQUIRED.getMessage());
-
-        assertThatThrownBy(() -> authService.signup(requestWithEmptyPassword))
-                .isInstanceOf(BaseException.class)
-                .hasMessageContaining(PASSWORD_REQUIRED.getMessage());
-    }
-
-    @Test
-    @DisplayName("회원가입 시 비밀번호가 너무 짧으면 예외가 발생함")
-    void testSignupWithTooShortPassword() {
-        //given
-        AuthSignupRequest request = new AuthSignupRequest("test@example.com", "short");
-
-        //when & then
-        assertThatThrownBy(() -> authService.signup(request))
-                .isInstanceOf(BaseException.class)
-                .hasMessageContaining(PASSWORD_TOO_SHORT.getMessage());
-    }
-
-    @Test
-    @DisplayName("회원가입 시 비밀번호 형식이 맞지 않으면 예외가 발생함")
-    void testSignupWithInvalidPassword() {
-        //given
-        AuthSignupRequest request = new AuthSignupRequest("test@example.com", "invalid-password");
-
-        //when & then
-        assertThatThrownBy(() -> authService.signup(request))
-                .isInstanceOf(BaseException.class)
-                .hasMessageContaining(PASSWORD_INVALID_FORMAT.getMessage());
     }
 
     @Test

@@ -2,7 +2,7 @@ package org.focus.logmeet.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.focus.logmeet.common.exeption.BaseException;
+import org.focus.logmeet.common.exception.BaseException;
 import org.focus.logmeet.controller.dto.auth.AuthLoginRequest;
 import org.focus.logmeet.controller.dto.auth.AuthLoginResponse;
 import org.focus.logmeet.controller.dto.auth.AuthSignupRequest;
@@ -31,13 +31,11 @@ public class AuthService {
     @Transactional
     public AuthSignupResponse signup(AuthSignupRequest request) {
         validateEmail(request.getEmail());
-        validatePassword(request.getPassword());
-        String randomName = "로그밋-" + UUID.randomUUID().toString().substring(0, 8); // 랜덤 이름 배정
 
         User user = User.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .name(randomName)
+                .name(request.getUserName())
                 .build();
 
         userRepository.save(user);
@@ -57,26 +55,8 @@ public class AuthService {
     }
 
     private void validateEmail(String email) {
-        if (email == null || email.isEmpty()) {
-            throw new BaseException(EMAIL_REQUIRED);
-        }
-        if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
-            throw new BaseException(INVALID_EMAIL_FORMAT);
-        }
         if (userRepository.findByEmail(email).isPresent()) {
             throw new BaseException(DUPLICATE_EMAIL);
-        }
-    }
-
-    private void validatePassword(String password) {
-        if (password == null || password.isEmpty()) {
-            throw new BaseException(PASSWORD_REQUIRED);
-        }
-        if (password.length() < 8) {
-            throw new BaseException(PASSWORD_TOO_SHORT);
-        }
-        if (!password.matches("^(?=.*[0-9!@#$%^&*]).{8,}$")) { //TODO: 문자와 숫자 포함 8자리 이상 수정
-            throw new BaseException(PASSWORD_INVALID_FORMAT);
         }
     }
 }
