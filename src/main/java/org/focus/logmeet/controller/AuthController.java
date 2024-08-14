@@ -20,7 +20,7 @@ import static org.focus.logmeet.common.utils.ValidationUtils.validateBindingResu
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/auth")
+@RequestMapping("/auth")
 public class AuthController {
 
     private final AuthService authService;
