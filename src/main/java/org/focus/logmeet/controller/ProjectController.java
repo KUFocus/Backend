@@ -11,4 +11,5 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RequestMapping("/project")
 public class ProjectController {
+
 }

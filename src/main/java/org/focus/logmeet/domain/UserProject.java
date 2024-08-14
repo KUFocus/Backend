@@ -2,6 +2,7 @@ package org.focus.logmeet.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.focus.logmeet.domain.enums.ProjectColor;
 import org.focus.logmeet.domain.util.BaseTimeEntity;
 
 @Entity
@@ -27,4 +28,8 @@ public class UserProject extends BaseTimeEntity {
 
     @Column(nullable = false)
     private String role; // TODO: 역할 enum 변환
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ProjectColor color;
 }
