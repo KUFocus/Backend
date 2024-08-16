@@ -27,7 +27,7 @@ public class AuthController {
 
     @PostMapping("/signup") //TODO: 이메일 검증 로직 고려
     public BaseResponse<AuthSignupResponse> signup(@Validated @RequestBody AuthSignupRequest request, BindingResult bindingResult) {
-        log.info("User sign-up request: {}", request.getEmail());
+        log.info("회원 가입 요청: {}", request.getEmail());
         validateBindingResult(bindingResult);
         AuthSignupResponse response = authService.signup(request);
         return new BaseResponse<>(response);
@@ -35,7 +35,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public BaseResponse<AuthLoginResponse> login(@Validated @RequestBody AuthLoginRequest request, BindingResult bindingResult) {
-        log.info("User login request: {}", request.getEmail());
+        log.info("로그인 요청: {}", request.getEmail());
         validateBindingResult(bindingResult);
         AuthLoginResponse response = authService.login(request);
         return new BaseResponse<>(response);

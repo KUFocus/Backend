@@ -61,7 +61,7 @@ class AuthControllerTest {
         when(authService.signup(any(AuthSignupRequest.class))).thenReturn(response);
 
         //when
-        MvcResult result = mockMvc.perform(post("/api/auth/signup")
+        MvcResult result = mockMvc.perform(post("/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andReturn();
@@ -86,7 +86,7 @@ class AuthControllerTest {
         when(authService.login(any(AuthLoginRequest.class))).thenReturn(response);
 
         //when
-        MvcResult result = mockMvc.perform(post("/api/auth/login")
+        MvcResult result = mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andReturn();
@@ -112,13 +112,13 @@ class AuthControllerTest {
         AuthSignupRequest requestWithEmptyEmail = new AuthSignupRequest("", "password123", "홍길동");
 
         //when & then
-        MvcResult resultNullEmail = mockMvc.perform(post("/api/auth/signup")
+        MvcResult resultNullEmail = mockMvc.perform(post("/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestWithNullEmail)))
                 .andExpect(status().isBadRequest())
                 .andReturn();
 
-        MvcResult resultEmptyEmail = mockMvc.perform(post("/api/auth/signup")
+        MvcResult resultEmptyEmail = mockMvc.perform(post("/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestWithEmptyEmail)))
                 .andExpect(status().isBadRequest())
@@ -144,7 +144,7 @@ class AuthControllerTest {
         AuthSignupRequest request = new AuthSignupRequest("invalid-email", "password123", "홍길동");
 
         //when & then
-        MvcResult result = mockMvc.perform(post("/api/auth/signup")
+        MvcResult result = mockMvc.perform(post("/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -168,13 +168,13 @@ class AuthControllerTest {
         AuthSignupRequest requestWithEmptyPassword = new AuthSignupRequest("test@example.com", "", "홍길동");
 
         //when & then
-        MvcResult resultWithNullPassword = mockMvc.perform(post("/api/auth/signup")
+        MvcResult resultWithNullPassword = mockMvc.perform(post("/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestWithNullPassword)))
                 .andExpect(status().isBadRequest())
                 .andReturn();
 
-        MvcResult resultWithEmptyPassword = mockMvc.perform(post("/api/auth/signup")
+        MvcResult resultWithEmptyPassword = mockMvc.perform(post("/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestWithEmptyPassword)))
                 .andExpect(status().isBadRequest())
@@ -201,7 +201,7 @@ class AuthControllerTest {
         AuthSignupRequest request = new AuthSignupRequest("test@example.com", "short", "홍길동");
 
         //when & then
-        MvcResult result = mockMvc.perform(post("/api/auth/signup")
+        MvcResult result = mockMvc.perform(post("/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -225,7 +225,7 @@ class AuthControllerTest {
         AuthSignupRequest request = new AuthSignupRequest("test@example.com", "invalid-password", "홍길동");
 
         //when & then
-        MvcResult result = mockMvc.perform(post("/api/auth/signup")
+        MvcResult result = mockMvc.perform(post("/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -249,13 +249,13 @@ class AuthControllerTest {
         AuthSignupRequest requestWithEmptyUserName = new AuthSignupRequest("test@example.com", "password123", "");
 
         //when & then
-        MvcResult resultWithNullUserName = mockMvc.perform(post("/api/auth/signup")
+        MvcResult resultWithNullUserName = mockMvc.perform(post("/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestWithNullUserName)))
                 .andExpect(status().isBadRequest())
                 .andReturn();
 
-        MvcResult resultWithEmptyUserName = mockMvc.perform(post("/api/auth/signup")
+        MvcResult resultWithEmptyUserName = mockMvc.perform(post("/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestWithEmptyUserName)))
                 .andExpect(status().isBadRequest())
@@ -281,7 +281,7 @@ class AuthControllerTest {
         AuthSignupRequest request = new AuthSignupRequest("test@example.com", "password123", "!!!");
 
         //when & then
-        MvcResult result = mockMvc.perform(post("/api/auth/signup")
+        MvcResult result = mockMvc.perform(post("/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
