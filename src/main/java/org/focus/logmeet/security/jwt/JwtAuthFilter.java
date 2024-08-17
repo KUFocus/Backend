@@ -10,11 +10,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.focus.logmeet.common.exception.BaseException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.EXPIRED_TOKEN;
+import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -25,44 +26,52 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
         log.debug("JWT 인증 필터 시작: 요청 URI = {}", request.getRequestURI());
 
-        String accessToken = jwtProvider.getHeaderToken(request, "Access");
-        String refreshToken = jwtProvider.getHeaderToken(request, "Refresh");
+        String token = jwtProvider.getHeaderToken(request);
+        if (token != null) {
+            String type = jwtProvider.getTokenType(token);  // 토큰 타입 확인
+            log.debug("{} Token 감지: {}", type, token);
 
-        if (accessToken != null) {
-            log.debug("Access Token 감지: {}", accessToken);
-
-            if (jwtProvider.tokenValidation(accessToken)) {
-                log.info("Access Token 유효: {}", accessToken);
-
-                setAuthentication(jwtProvider.getEmailFromToken(accessToken));
-            } else if (refreshToken != null) {
-                log.debug("Access Token 만료, Refresh Token 감지: {}", refreshToken);
-
-                boolean isRefreshToken = jwtProvider.refreshTokenValidation(refreshToken);
-                if (isRefreshToken) {
-                    log.info("Refresh Token 유효: {}", refreshToken);
-
-                    String email = jwtProvider.getEmailFromToken(refreshToken);
+            if ("Access".equals(type)) {
+                if (jwtProvider.tokenValidation(token)) {
+                    log.info("Access Token 유효: {}", token);
+                    setAuthentication(jwtProvider.getEmailFromToken(token));
+                } else {
+                    log.error("Access Token 만료: {}", token);
+                    throw new BaseException(EXPIRED_TOKEN);
+                }
+            } else if ("Refresh".equals(type)) {
+                if (jwtProvider.refreshTokenValidation(token)) {
+                    log.info("Refresh Token 유효: {}", token);
+                    String email = jwtProvider.getEmailFromToken(token);
                     String newAccessToken = jwtProvider.createToken(email, "Access");
                     jwtProvider.setHeaderAccessToken(response, newAccessToken);
                     setAuthentication(jwtProvider.getEmailFromToken(newAccessToken));
                     log.info("새로운 Access Token 생성 및 설정: {}", newAccessToken);
-
                 } else {
-                    log.error("Refresh Token 만료: {}", refreshToken);
-
+                    log.error("Refresh Token 만료: {}", token);
                     throw new BaseException(EXPIRED_TOKEN);
                 }
             } else {
-                log.error("Access Token 및 Refresh Token 모두 만료됨");
+                log.error("잘못된 토큰 타입: {}", type);
+                throw new BaseException(INVALID_TOKEN);
             }
         } else {
-            log.debug("Access Token 없음, 인증 정보 없이 요청 처리");
+            log.error("토큰이 Header에 없음");
+            throw new BaseException(TOKEN_NOT_FOUND);
         }
+
         filterChain.doFilter(request, response);
         log.debug("JWT 인증 필터 종료: 요청 URI = {}", request.getRequestURI());
-
     }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return new AntPathMatcher().match("/auth/**", path) ||
+                new AntPathMatcher().match("/swagger-ui/**", path) ||
+                new AntPathMatcher().match("/v3/**", path);
+    }
+
     public void setAuthentication(String email) {
         log.debug("인증 설정: email={}", email);
 
