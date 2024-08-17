@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.focus.logmeet.common.response.BaseResponse;
 import org.focus.logmeet.controller.dto.Project.ProjectCreateRequest;
 import org.focus.logmeet.controller.dto.Project.ProjectCreateResponse;
+import org.focus.logmeet.service.ProjectService;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,10 +21,21 @@ import static org.focus.logmeet.common.utils.ValidationUtils.validateBindingResu
 @RequiredArgsConstructor
 @RequestMapping("/project")
 public class ProjectController {
-//    @PostMapping("/")
-//    public BaseResponse<ProjectCreateResponse> createProject(@Validated @RequestBody ProjectCreateRequest request, BindingResult bindingResult) {
-//        log.info("프로젝트 생성 요청: {}", request.getName());
-//        validateBindingResult(bindingResult);
-//
-//    }
+
+    private final ProjectService projectService;
+
+    @PostMapping("/new")
+    public BaseResponse<ProjectCreateResponse> createProject(@Validated @RequestBody ProjectCreateRequest request, BindingResult bindingResult) {
+        log.info("프로젝트 생성 요청: {}", request.getName());
+        validateBindingResult(bindingResult);
+
+        ProjectCreateResponse response = projectService.createProject(request);
+        return new BaseResponse<>(response);
+    }
+
+    @PostMapping("/test")
+    public Boolean testProject(String message) {
+        log.info("테스트 요청: {}", message);
+        return true;
+    }
 }

@@ -2,6 +2,7 @@ package org.focus.logmeet.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.focus.logmeet.domain.enums.Status;
 import org.focus.logmeet.domain.util.BaseTimeEntity;
 
 import java.util.List;
@@ -11,7 +12,8 @@ import java.util.List;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class Project extends BaseTimeEntity { //TODO: 색깔 정보 추가
+@Builder
+public class Project extends BaseTimeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "project_id")
@@ -28,5 +30,5 @@ public class Project extends BaseTimeEntity { //TODO: 색깔 정보 추가
 
     @Column(length = 500)
     private String content;
-    private String status;
+    private Status status;
 }
