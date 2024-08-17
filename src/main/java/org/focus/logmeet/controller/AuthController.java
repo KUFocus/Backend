@@ -1,5 +1,6 @@
 package org.focus.logmeet.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.focus.logmeet.common.response.BaseResponse;
@@ -7,6 +8,7 @@ import org.focus.logmeet.controller.dto.auth.AuthLoginRequest;
 import org.focus.logmeet.controller.dto.auth.AuthLoginResponse;
 import org.focus.logmeet.controller.dto.auth.AuthSignupRequest;
 import org.focus.logmeet.controller.dto.auth.AuthSignupResponse;
+import org.focus.logmeet.security.jwt.JwtProvider;
 import org.focus.logmeet.service.AuthService;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
@@ -20,14 +22,15 @@ import static org.focus.logmeet.common.utils.ValidationUtils.validateBindingResu
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/auth")
+@RequestMapping("/auth")
 public class AuthController {
 
     private final AuthService authService;
+    private final JwtProvider jwtProvider;
 
     @PostMapping("/signup") //TODO: 이메일 검증 로직 고려
     public BaseResponse<AuthSignupResponse> signup(@Validated @RequestBody AuthSignupRequest request, BindingResult bindingResult) {
-        log.info("User sign-up request: {}", request.getEmail());
+        log.info("회원 가입 요청: {}", request.getEmail());
         validateBindingResult(bindingResult);
         AuthSignupResponse response = authService.signup(request);
         return new BaseResponse<>(response);
@@ -35,9 +38,18 @@ public class AuthController {
 
     @PostMapping("/login")
     public BaseResponse<AuthLoginResponse> login(@Validated @RequestBody AuthLoginRequest request, BindingResult bindingResult) {
-        log.info("User login request: {}", request.getEmail());
+        log.info("로그인 요청: {}", request.getEmail());
         validateBindingResult(bindingResult);
         AuthLoginResponse response = authService.login(request);
         return new BaseResponse<>(response);
     }
+
+    @PostMapping("/logout")
+    public BaseResponse<Void> logout(HttpServletRequest request) {
+        String token = jwtProvider.getHeaderToken(request);
+        log.info("로그아웃 요청: token={}", token);
+        authService.logout(token);
+        return new BaseResponse<>(null);
+    }
+
 }

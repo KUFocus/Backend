@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.focus.logmeet.domain.util.BaseTimeEntity;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @Setter
@@ -24,8 +26,10 @@ public class RefreshToken extends BaseTimeEntity {
 
     private String userEmail;
 
-    public RefreshToken updateToken(String token) {
+    private LocalDateTime expirationDate;
+
+    public void updateToken(String token, LocalDateTime expirationDate) {
         this.refreshToken = token;
-        return this;
+        this.expirationDate = expirationDate;
     }
 }

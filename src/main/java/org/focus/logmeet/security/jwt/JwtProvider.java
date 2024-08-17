@@ -32,11 +32,8 @@ public class JwtProvider {
     private final UserDetailsServiceImpl userDetailsService;
     private final RefreshTokenRepository refreshTokenRepository;
 
-    private static final long ACCESS_TIME = 60 * 1000L;
-    private static final long REFRESH_TIME = 2 * 60 * 1000L;
-
-    public static final String ACCESS_TOKEN = "Access_Token";
-    public static final String REFRESH_TOKEN = "Refresh_Token";
+    private static final long ACCESS_TIME = 15 * 60 * 1000L; // 15분
+    private static final long REFRESH_TIME = 7 * 24 * 60 * 60 * 1000L; // 7일
 
     @Value("${secret.jwt-secret-key}")
     private String secretKey;
@@ -47,43 +44,72 @@ public class JwtProvider {
     public void init() {
         byte[] bytes = Base64.getDecoder().decode(secretKey);
         key = Keys.hmacShaKeyFor(bytes);
+        log.info("JWTProvider 초기화 완료: 키가 설정됨.");
+    }
+
+    public long getRefreshTime() {
+        return REFRESH_TIME;
     }
 
     // header 토큰
-    public String getHeaderToken(HttpServletRequest request, String type) {
-        return type.equals("Access") ? request.getHeader(ACCESS_TOKEN) : request.getHeader(REFRESH_TOKEN);
+    public String getHeaderToken(HttpServletRequest request) {
+        String header = request.getHeader("Authorization");
+        if (header != null && header.startsWith("Bearer ")) {
+            return header.substring(7);  // "Bearer " 이후의 토큰 부분만 추출
+        }
+        return null;
     }
+
+    // 토큰 타입 가져오기
+    public String getTokenType(String token) {
+        Claims claims = parseToken(token);
+        return claims.get("type", String.class);
+    }
+
 
     // 토큰 생성
     public JwtTokenDto createAllToken(String email) {
-        return new JwtTokenDto(createToken(email, "Access"), createToken(email, "Refresh"));
+        log.info("모든 토큰 생성: email={}", email);
+        JwtTokenDto tokenDto = new JwtTokenDto(createToken(email, "Access"), createToken(email, "Refresh"));
+
+        log.debug("Access Token: {}", tokenDto.getAccessToken());
+        return tokenDto;
     }
 
     public String createToken(String email, String type) {
-        Date date = new Date();
+        Date now = new Date();
         long expirationTime = type.equals("Access") ? ACCESS_TIME : REFRESH_TIME;
 
-        return Jwts.builder()
+        String token = Jwts.builder()
                 .setSubject(email)
-                .setExpiration(new Date(date.getTime() + expirationTime))
-                .setIssuedAt(date)
+                .claim("type", type)
+                .setExpiration(new Date(now.getTime() + expirationTime))
+                .setIssuedAt(now)
                 .signWith(key, signatureAlgorithm)
                 .compact();
+        log.info("{} 토큰 생성 완료: email={}, token={}", type, email, token);
+        return token;
     }
 
     public Claims parseToken(String token) {
         try {
+            log.debug("토큰 파싱 시도: token={}", token);
+
             return Jwts.parserBuilder()
                     .setSigningKey(key).build()
                     .parseClaimsJws(token)
                     .getBody();
         } catch (ExpiredJwtException e) {
+            log.error("토큰 만료: token={}", token);
             throw new BaseException(EXPIRED_TOKEN);
         } catch (UnsupportedJwtException e) {
+            log.error("지원되지 않는 토큰: token={}", token);
             throw new BaseException(UNSUPPORTED_TOKEN_TYPE);
         } catch (MalformedJwtException e) {
+            log.error("변조된 토큰: token={}", token);
             throw new BaseException(MALFORMED_TOKEN);
         } catch (IllegalArgumentException | JwtException e) {
+            log.error("잘못된 토큰: token={}", token);
             throw new BaseException(INVALID_TOKEN);
         }
     }
@@ -91,10 +117,12 @@ public class JwtProvider {
     // 토큰 검증
     public Boolean tokenValidation(String token) {
         try {
+            log.debug("토큰 검증 시도: token={}", token);
             parseToken(token);
+            log.info("토큰 유효성 검증 성공: token={}", token);
             return true;
         } catch (Exception e) {
-            log.error("Invalid token: {}", e.getMessage());
+            log.error("토큰 유효성 검증 실패: token={}, error={}", token, e.getMessage());
             return false;
         }
     }
@@ -102,28 +130,40 @@ public class JwtProvider {
     // refresh 토큰 검증
     public Boolean refreshTokenValidation(String token) {
         try {
+            log.debug("Refresh 토큰 검증 시도: token={}", token);
+
             Claims claims = parseToken(token);
             String email = claims.getSubject();
             Optional<RefreshToken> refreshToken = refreshTokenRepository.findByUserEmail(email);
 
-            return refreshToken.isPresent() && token.equals(refreshToken.get().getRefreshToken());
+            boolean isValid = refreshToken.isPresent() && token.equals(refreshToken.get().getRefreshToken());
+            if (isValid) {
+                log.info("Refresh 토큰 유효: token={}", token);
+            } else {
+                log.error("Refresh 토큰 불일치 또는 존재하지 않음: token={}", token);
+            }
+            return isValid;
         } catch (BaseException e) {
-            log.error("Invalid refresh token: {}", e.getStatus());
+            log.error("Refresh 토큰 검증 실패: token={}, error={}", token, e.getStatus());
             return false;
         }
     }
 
     // 인증 객체 생성
     public Authentication createAuthentication(String email) {
+        log.debug("인증 객체 생성 시도: email={}", email);
         UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+        log.info("인증 객체 생성 완료: email={}", email);
         return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
     }
 
     // email 추출
     public String getEmailFromToken(String token) {
         try {
-            Claims claims = parseToken(token);
-            return claims.getSubject();
+            log.debug("토큰에서 이메일 추출 시도: token={}", token);
+            String email = parseToken(token).getSubject();
+            log.info("이메일 추출 완료: email={}", email);
+            return email;
         } catch (BaseException e) {
             log.error("Token parsing error: {}", e.getStatus());
             return null;
@@ -132,12 +172,15 @@ public class JwtProvider {
 
     // access 토큰 헤더 설정
     public void setHeaderAccessToken(HttpServletResponse response, String accessToken) {
+        log.debug("Access 토큰을 응답 헤더에 설정: token={}", accessToken);
+
         response.setHeader("Access_Token", accessToken);
     }
 
     // refresh 토큰 헤더 설정
     public void setHeaderRefreshToken(HttpServletResponse response, String refreshToken) {
+        log.debug("Refresh 토큰을 응답 헤더에 설정: token={}", refreshToken);
+
         response.setHeader("Refresh_Token", refreshToken);
     }
 }
-

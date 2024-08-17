@@ -8,6 +8,6 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/user")
-public class UserController {
+@RequestMapping("/user")
+public class UserController { //TODO: 회원정보 수정
 }
