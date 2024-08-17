@@ -31,17 +31,21 @@ public class UserDetailsImpl implements UserDetails {
 
     @Override
     public String getPassword() {
-        return null;
+        return user.getPassword();
     }
 
     @Override
     public String getUsername() {
-        return null;
+        return user.getName();
     }
 
     @Override
     public boolean isAccountNonExpired() {
         return false;
+    }
+
+    public Long getId() {
+        return user.getId();
     }
 
     @Override

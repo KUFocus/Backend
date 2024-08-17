@@ -27,10 +27,11 @@ public enum BaseExceptionResponseStatus implements ResponseStatus {
     // User 오류
     DUPLICATE_EMAIL(false, 4000, "이미 존재하는 이메일입니다."),
     USER_NOT_FOUND(false, 4001, "존재하지 않는 회원입니다."),
-    PASSWORD_NO_MATCH(false, 4002, "비밀번호가 일치하지 않습니다."),
-    INVALID_USER_STATUS(false, 4003, "잘못된 회원 status 값입니다."),
-    USER_NOT_LOGGED_IN(false, 4004, "로그인하지 않은 사용자입니다."),
-    SAME_AS_OLD_PASSWORD(false, 4005, "새 비밀번호는 기존 비밀번호와 달라야 합니다.");
+    USER_NOT_AUTHENTICATED(false, 4002, "인증되지 않은 회원입니다."),
+    PASSWORD_NO_MATCH(false, 4003, "비밀번호가 일치하지 않습니다."),
+    INVALID_USER_STATUS(false, 4004, "잘못된 회원 status 값입니다."),
+    USER_NOT_LOGGED_IN(false, 4005, "로그인하지 않은 사용자입니다."),
+    SAME_AS_OLD_PASSWORD(false, 4006, "새 비밀번호는 기존 비밀번호와 달라야 합니다.");
 
 
     private final boolean isSuccess;
