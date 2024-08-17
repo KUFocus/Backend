@@ -32,11 +32,8 @@ public class JwtProvider {
     private final UserDetailsServiceImpl userDetailsService;
     private final RefreshTokenRepository refreshTokenRepository;
 
-    private static final long ACCESS_TIME = 60 * 1000L;
-    private static final long REFRESH_TIME = 2 * 60 * 1000L;
-
-    public static final String ACCESS_TOKEN = "Access_Token";
-    public static final String REFRESH_TOKEN = "Refresh_Token";
+    private static final long ACCESS_TIME = 15 * 60 * 1000L; // 15분
+    private static final long REFRESH_TIME = 7 * 24 * 60 * 60 * 1000L; // 7일
 
     @Value("${secret.jwt-secret-key}")
     private String secretKey;
@@ -50,14 +47,25 @@ public class JwtProvider {
         log.info("JWTProvider 초기화 완료: 키가 설정됨.");
     }
 
-    // header 토큰
-        public String getHeaderToken(HttpServletRequest request, String type) {
-            String token = type.equals("Access") ? request.getHeader(ACCESS_TOKEN) : request.getHeader(REFRESH_TOKEN);
-
-            log.debug("{} 토큰을 헤더에서 가져옴: {}", type, token);
-
-            return token;
+    public long getRefreshTime() {
+        return REFRESH_TIME;
     }
+
+    // header 토큰
+    public String getHeaderToken(HttpServletRequest request) {
+        String header = request.getHeader("Authorization");
+        if (header != null && header.startsWith("Bearer ")) {
+            return header.substring(7);  // "Bearer " 이후의 토큰 부분만 추출
+        }
+        return null;
+    }
+
+    // 토큰 타입 가져오기
+    public String getTokenType(String token) {
+        Claims claims = parseToken(token);
+        return claims.get("type", String.class);
+    }
+
 
     // 토큰 생성
     public JwtTokenDto createAllToken(String email) {
@@ -69,13 +77,14 @@ public class JwtProvider {
     }
 
     public String createToken(String email, String type) {
-        Date date = new Date();
+        Date now = new Date();
         long expirationTime = type.equals("Access") ? ACCESS_TIME : REFRESH_TIME;
 
         String token = Jwts.builder()
                 .setSubject(email)
-                .setExpiration(new Date(date.getTime() + expirationTime))
-                .setIssuedAt(date)
+                .claim("type", type)
+                .setExpiration(new Date(now.getTime() + expirationTime))
+                .setIssuedAt(now)
                 .signWith(key, signatureAlgorithm)
                 .compact();
         log.info("{} 토큰 생성 완료: email={}, token={}", type, email, token);
