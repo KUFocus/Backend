@@ -7,7 +7,9 @@ import org.focus.logmeet.controller.dto.auth.AuthLoginRequest;
 import org.focus.logmeet.controller.dto.auth.AuthLoginResponse;
 import org.focus.logmeet.controller.dto.auth.AuthSignupRequest;
 import org.focus.logmeet.controller.dto.auth.AuthSignupResponse;
+import org.focus.logmeet.domain.RefreshToken;
 import org.focus.logmeet.domain.User;
+import org.focus.logmeet.repository.RefreshTokenRepository;
 import org.focus.logmeet.repository.UserRepository;
 import org.focus.logmeet.security.jwt.JwtProvider;
 import org.focus.logmeet.security.jwt.JwtTokenDto;
@@ -15,6 +17,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+
+import java.time.LocalDateTime;
+import java.util.Optional;
 
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
 
@@ -24,6 +29,7 @@ import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
 
@@ -58,10 +64,44 @@ public class AuthService {
             throw new BaseException(PASSWORD_NO_MATCH);
         }
         JwtTokenDto allToken = jwtProvider.createAllToken(user.getEmail());
+
+        saveOrUpdateRefreshToken(user.getEmail(), allToken.getRefreshToken());
+
         log.info("로그인 성공: email={}", user.getEmail());
 
         return new AuthLoginResponse(allToken.getAccessToken(), allToken.getRefreshToken());
     }
+
+    @Transactional
+    public void logout(String token) {
+        String email = jwtProvider.getEmailFromToken(token);
+        log.info("로그아웃 시도: email={}", email);
+
+        Optional<RefreshToken> refreshTokenOptional = refreshTokenRepository.findByUserEmail(email);
+        if (refreshTokenOptional.isPresent()) {
+            refreshTokenRepository.delete(refreshTokenOptional.get());
+            log.info("로그아웃 성공: email={}", email);
+            throw new BaseException(SUCCESS);
+        } else {
+            log.warn("로그아웃 실패: email={}, Refresh Token이 존재하지 않음", email);
+            throw new BaseException(TOKEN_NOT_FOUND);
+        }
+    }
+
+    private void saveOrUpdateRefreshToken(String email, String newRefreshToken) {
+        long expirationMinutes = jwtProvider.getRefreshTime() / 60 / 1000;
+        LocalDateTime expirationDate = LocalDateTime.now().plusMinutes(expirationMinutes);
+
+        Optional<RefreshToken> refreshTokenOptional = refreshTokenRepository.findByUserEmail(email);
+        if (refreshTokenOptional.isPresent()) {
+            refreshTokenOptional.get().updateToken(newRefreshToken, expirationDate);
+            refreshTokenRepository.save(refreshTokenOptional.get());
+        } else {
+            RefreshToken refreshToken = new RefreshToken(null, newRefreshToken, email, expirationDate);
+            refreshTokenRepository.save(refreshToken);
+        }
+    }
+
 
     private void validateEmail(String email) {
         log.debug("이메일 유효성 검사: email={}", email);
