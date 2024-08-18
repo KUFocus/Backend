@@ -31,7 +31,12 @@ public enum BaseExceptionResponseStatus implements ResponseStatus {
     PASSWORD_NO_MATCH(false, 4003, "비밀번호가 일치하지 않습니다."),
     INVALID_USER_STATUS(false, 4004, "잘못된 회원 status 값입니다."),
     USER_NOT_LOGGED_IN(false, 4005, "로그인하지 않은 사용자입니다."),
-    SAME_AS_OLD_PASSWORD(false, 4006, "새 비밀번호는 기존 비밀번호와 달라야 합니다.");
+    SAME_AS_OLD_PASSWORD(false, 4006, "새 비밀번호는 기존 비밀번호와 달라야 합니다."),
+
+    // Project 오류
+    PROJECT_NOT_FOUND(false, 5000, "존재하지 않는 프로젝트입니다."),
+    USER_NOT_IN_PROJECT(false, 5001, "프로젝트 내에 존재하지 않는 회원입니다."),
+    USER_NOT_LEADER(false, 5002, "프로젝트 리더가 아닙니다.");
 
 
     private final boolean isSuccess;
