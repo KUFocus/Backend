@@ -89,6 +89,50 @@ public class ProjectService { //TODO: 인증 과정 중 예외 발생 시 BaseEx
     @CurrentUser
     public void updateProject(Long projectId, String name, String content, ProjectColor color) {
         log.info("프로젝트 수정 시도: projectId={}, projectName={}", projectId, name);
+        UserProject userProject = validateUserAndProject(projectId);
+
+        Project project = userProject.getProject();
+        project.setName(name);
+        project.setContent(content);
+        userProject.setColor(color);
+
+        projectRepository.save(project);
+        userProjectRepository.save(userProject);
+        log.info("프로젝트 수정 성공: projectId={}", projectId);
+    }
+
+    @Transactional
+    @CurrentUser
+    public void expelMember(Long projectId, Long userId) {
+        log.info("참가자 추방 시도: projectId={}, userId={}", projectId, userId);
+        UserProject leaderProject = validateUserAndProject(projectId);
+
+        User currentUser = CurrentUserHolder.get();
+        if (currentUser.getId().equals(userId)) {
+            log.error("자기 자신을 추방하려고 함: userId={}", userId);
+            throw new BaseException(CANNOT_EXPEL_SELF);
+        }
+
+        UserProject memberToExpel = userProjectRepository.findByUserIdAndProject(userId, leaderProject.getProject())
+                .orElseThrow(() -> new BaseException(USER_NOT_IN_PROJECT));
+
+        userProjectRepository.delete(memberToExpel);
+
+        log.info("참가자 추방 성공: projectId={}, userId={}", projectId, userId);
+    }
+
+
+    @Transactional
+    @CurrentUser
+    public void deleteProject(Long projectId) {
+        log.info("프로젝트 삭제 시도: projectId={}", projectId);
+        UserProject leaderProject = validateUserAndProject(projectId);
+
+        projectRepository.delete(leaderProject.getProject());
+        log.info("프로젝트 삭제 성공: projectId={}", projectId);
+    }
+
+    private UserProject validateUserAndProject(Long projectId) {
         User currentUser = CurrentUserHolder.get();
 
         if (currentUser == null) {
@@ -105,45 +149,6 @@ public class ProjectService { //TODO: 인증 과정 중 예외 발생 시 BaseEx
             throw new BaseException(USER_NOT_LEADER);
         }
 
-        project.setName(name);
-        project.setContent(content);
-        userProject.setColor(color);
-
-        projectRepository.save(project);
-        userProjectRepository.save(userProject);
-        log.info("프로젝트 수정 성공: projectId={}", projectId);
-    }
-
-    @Transactional
-    @CurrentUser
-    public void expelMember(Long projectId, Long userId) {
-        log.info("참가자 추방 시도: projectId={}, userId={}", projectId, userId);
-        User currentUser = CurrentUserHolder.get();
-
-        if (currentUser == null) {
-            throw new BaseException(USER_NOT_AUTHENTICATED);
-        }
-
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new BaseException(PROJECT_NOT_FOUND));
-
-        UserProject leaderProject = userProjectRepository.findByUserAndProject(currentUser, project)
-                .orElseThrow(() -> new BaseException(USER_NOT_IN_PROJECT));
-
-        if (!leaderProject.getRole().equals(LEADER)) {
-            throw new BaseException(USER_NOT_LEADER);
-        }
-
-        if (currentUser.getId().equals(userId)) {
-            log.error("자기 자신을 추방하려고 함: userId={}", userId);
-            throw new BaseException(BaseExceptionResponseStatus.CANNOT_EXPEL_SELF);
-        }
-
-        UserProject memberToExpel = userProjectRepository.findByUserIdAndProject(userId, project)
-                .orElseThrow(() -> new BaseException(USER_NOT_IN_PROJECT));
-
-        userProjectRepository.delete(memberToExpel);
-
-        log.info("참가자 추방 성공: projectId={}, userId={}", projectId, userId);
+        return userProject;
     }
 }

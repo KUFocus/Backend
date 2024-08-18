@@ -47,10 +47,17 @@ public class ProjectController {
         return new BaseResponse<>(BaseExceptionResponseStatus.SUCCESS);
     }
 
-    @DeleteMapping("/expel") //TODO: 자기 자신 추방 못하게 수정해야함
+    @DeleteMapping("/expel")
     public BaseResponse<Void> expelMember(@RequestParam Long projectId, @RequestParam Long userId) {
         log.info("참가자 추방 요청: projectId={}, userId={}", projectId, userId);
         projectService.expelMember(projectId, userId);
+        return new BaseResponse<>(BaseExceptionResponseStatus.SUCCESS);
+    }
+
+    @DeleteMapping("/{projectId}")
+    public BaseResponse<Void> deleteProject(@PathVariable Long projectId) {
+        log.info("프로젝트 삭제 요청: projectId={}", projectId);
+        projectService.deleteProject(projectId);
         return new BaseResponse<>(BaseExceptionResponseStatus.SUCCESS);
     }
 
