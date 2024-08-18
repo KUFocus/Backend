@@ -96,13 +96,13 @@ public class ProjectService { //TODO: 인증 과정 중 예외 발생 시 BaseEx
         }
 
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new BaseException(BaseExceptionResponseStatus.PROJECT_NOT_FOUND));
+                .orElseThrow(() -> new BaseException(PROJECT_NOT_FOUND));
 
         UserProject userProject = userProjectRepository.findByUserAndProject(currentUser, project)
                 .orElseThrow(() -> new BaseException(USER_NOT_IN_PROJECT));
 
         if (!userProject.getRole().equals(LEADER)) {
-            throw new BaseException(BaseExceptionResponseStatus.USER_NOT_LEADER);
+            throw new BaseException(USER_NOT_LEADER);
         }
 
         project.setName(name);
@@ -125,13 +125,18 @@ public class ProjectService { //TODO: 인증 과정 중 예외 발생 시 BaseEx
         }
 
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new BaseException(BaseExceptionResponseStatus.PROJECT_NOT_FOUND));
+                .orElseThrow(() -> new BaseException(PROJECT_NOT_FOUND));
 
         UserProject leaderProject = userProjectRepository.findByUserAndProject(currentUser, project)
                 .orElseThrow(() -> new BaseException(USER_NOT_IN_PROJECT));
 
         if (!leaderProject.getRole().equals(LEADER)) {
-            throw new BaseException(BaseExceptionResponseStatus.USER_NOT_LEADER);
+            throw new BaseException(USER_NOT_LEADER);
+        }
+
+        if (currentUser.getId().equals(userId)) {
+            log.error("자기 자신을 추방하려고 함: userId={}", userId);
+            throw new BaseException(BaseExceptionResponseStatus.CANNOT_EXPEL_SELF);
         }
 
         UserProject memberToExpel = userProjectRepository.findByUserIdAndProject(userId, project)

@@ -36,7 +36,9 @@ public enum BaseExceptionResponseStatus implements ResponseStatus {
     // Project 오류
     PROJECT_NOT_FOUND(false, 5000, "존재하지 않는 프로젝트입니다."),
     USER_NOT_IN_PROJECT(false, 5001, "프로젝트 내에 존재하지 않는 회원입니다."),
-    USER_NOT_LEADER(false, 5002, "프로젝트 리더가 아닙니다.");
+    USER_NOT_LEADER(false, 5002, "프로젝트 리더가 아닙니다."),
+    CANNOT_EXPEL_SELF(false, 5003, "자기 자신은 추방할 수 없습니다.");
+
 
 
     private final boolean isSuccess;
