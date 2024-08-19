@@ -5,10 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.focus.logmeet.common.response.BaseExceptionResponseStatus;
 import org.focus.logmeet.common.response.BaseResponse;
-import org.focus.logmeet.controller.dto.project.ProjectCreateRequest;
-import org.focus.logmeet.controller.dto.project.ProjectCreateResponse;
-import org.focus.logmeet.controller.dto.project.ProjectUpdateRequest;
-import org.focus.logmeet.controller.dto.project.ProjectUpdateResponse;
+import org.focus.logmeet.controller.dto.project.*;
 import org.focus.logmeet.service.ProjectService;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
@@ -45,6 +42,13 @@ public class ProjectController {
         log.info("프로젝트 수정 요청 (PUT): projectId={}", projectId);
         projectService.updateProject(projectId, request.getName(), request.getContent(), request.getColor());
         return new BaseResponse<>(BaseExceptionResponseStatus.SUCCESS);
+    }
+
+    @PutMapping("/{projectId}/bookmark")
+    public BaseResponse<ProjectBookmarkResult> bookmarkProjectToggle(@PathVariable Long projectId) {
+        log.info("프로젝트 즐겨찾기 추가/해제 요청: projectId={}", projectId);
+        ProjectBookmarkResult result = projectService.bookmarkProjectToggle(projectId);
+        return new BaseResponse<>(result);
     }
 
     @DeleteMapping("/expel")

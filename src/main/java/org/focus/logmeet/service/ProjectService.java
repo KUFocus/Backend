@@ -3,11 +3,7 @@ package org.focus.logmeet.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.focus.logmeet.common.exception.BaseException;
-import org.focus.logmeet.common.response.BaseExceptionResponseStatus;
-import org.focus.logmeet.controller.dto.project.ProjectCreateRequest;
-import org.focus.logmeet.controller.dto.project.ProjectCreateResponse;
-import org.focus.logmeet.controller.dto.project.ProjectUpdateResponse;
-import org.focus.logmeet.controller.dto.project.UserProjectDto;
+import org.focus.logmeet.controller.dto.project.*;
 import org.focus.logmeet.domain.Project;
 import org.focus.logmeet.domain.User;
 import org.focus.logmeet.domain.UserProject;
@@ -79,6 +75,7 @@ public class ProjectService { //TODO: 인증 과정 중 예외 발생 시 BaseEx
                         up.getUser().getId(),
                         up.getUser().getName(),
                         up.getRole(),
+                        up.getBookmark(),
                         up.getColor()))
                 .collect(Collectors.toList());
 
@@ -90,6 +87,10 @@ public class ProjectService { //TODO: 인증 과정 중 예외 발생 시 BaseEx
     public void updateProject(Long projectId, String name, String content, ProjectColor color) {
         log.info("프로젝트 수정 시도: projectId={}, projectName={}", projectId, name);
         UserProject userProject = validateUserAndProject(projectId);
+
+        if (!userProject.getRole().equals(LEADER)) {
+            throw new BaseException(USER_NOT_LEADER);
+        }
 
         Project project = userProject.getProject();
         project.setName(name);
@@ -103,9 +104,30 @@ public class ProjectService { //TODO: 인증 과정 중 예외 발생 시 BaseEx
 
     @Transactional
     @CurrentUser
+    public ProjectBookmarkResult bookmarkProjectToggle(Long projectId) {
+        log.info("프로젝트 즐겨찾기 추가/해제 시도: projectId={}", projectId);
+        UserProject userProject = validateUserAndProject(projectId);
+
+        if (userProject.getBookmark() == Boolean.TRUE) {
+            userProject.setBookmark(Boolean.FALSE);
+        } else {
+            userProject.setBookmark(Boolean.TRUE);
+        }
+
+        userProjectRepository.save(userProject);
+        log.info("프로젝트 즐겨찾기 추가/해제 성공: projectId={}, userId={}, bookmark={}", projectId, userProject.getUser().getId(), userProject.getBookmark());
+        return new ProjectBookmarkResult(userProject.getBookmark());
+    }
+
+    @Transactional
+    @CurrentUser
     public void expelMember(Long projectId, Long userId) {
         log.info("참가자 추방 시도: projectId={}, userId={}", projectId, userId);
         UserProject leaderProject = validateUserAndProject(projectId);
+
+        if (!leaderProject.getRole().equals(LEADER)) {
+            throw new BaseException(USER_NOT_LEADER);
+        }
 
         User currentUser = CurrentUserHolder.get();
         if (currentUser.getId().equals(userId)) {
@@ -128,6 +150,10 @@ public class ProjectService { //TODO: 인증 과정 중 예외 발생 시 BaseEx
         log.info("프로젝트 삭제 시도: projectId={}", projectId);
         UserProject leaderProject = validateUserAndProject(projectId);
 
+        if (!leaderProject.getRole().equals(LEADER)) {
+            throw new BaseException(USER_NOT_LEADER);
+        }
+
         projectRepository.delete(leaderProject.getProject());
         log.info("프로젝트 삭제 성공: projectId={}", projectId);
     }
@@ -142,13 +168,7 @@ public class ProjectService { //TODO: 인증 과정 중 예외 발생 시 BaseEx
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new BaseException(PROJECT_NOT_FOUND));
 
-        UserProject userProject = userProjectRepository.findByUserAndProject(currentUser, project)
+        return userProjectRepository.findByUserAndProject(currentUser, project)
                 .orElseThrow(() -> new BaseException(USER_NOT_IN_PROJECT));
-
-        if (!userProject.getRole().equals(LEADER)) {
-            throw new BaseException(USER_NOT_LEADER);
-        }
-
-        return userProject;
     }
 }

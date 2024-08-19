@@ -12,5 +12,6 @@ public class UserProjectDto {
     private Long userId;
     private String userName;
     private Role role;
+    private Boolean bookmark;
     private ProjectColor color;
 }
