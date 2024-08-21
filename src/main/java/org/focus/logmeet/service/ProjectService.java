@@ -81,7 +81,7 @@ public class ProjectService { //TODO: 인증 과정 중 예외 발생 시 BaseEx
                         up.getColor()))
                 .collect(Collectors.toList());
 
-        return new ProjectInfoResult(project.getId(), project.getName(), project.getContent(), userProjectDtos);
+        return new ProjectInfoResult(project.getId(), project.getName(), project.getContent(), project.getCreatedAt(), userProjectDtos);
     }
 
     @Transactional
