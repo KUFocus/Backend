@@ -39,7 +39,7 @@ public class ProjectController {
         return new BaseResponse<>(result);
     }
 
-    @GetMapping("/projectList")
+    @GetMapping("/project-list")
     public BaseResponse<List<ProjectListResult>> getProjectList() {
         log.info("프로젝트 리스트 요청");
         List<ProjectListResult> projectList = projectService.getProjectList();
