@@ -7,7 +7,7 @@ import java.util.List;
 
 @Data
 @AllArgsConstructor
-public class ProjectUpdateResponse {
+public class ProjectInfoResult {
     private Long projectId;
     private String name;
     private String content;

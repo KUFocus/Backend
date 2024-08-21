@@ -10,12 +10,14 @@ import org.focus.logmeet.domain.UserProject;
 import org.focus.logmeet.domain.enums.ProjectColor;
 import org.focus.logmeet.repository.ProjectRepository;
 import org.focus.logmeet.repository.UserProjectRepository;
+import org.focus.logmeet.repository.UserRepository;
 import org.focus.logmeet.security.annotation.CurrentUser;
 import org.focus.logmeet.security.aspect.CurrentUserHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
@@ -63,7 +65,7 @@ public class ProjectService { //TODO: 인증 과정 중 예외 발생 시 BaseEx
 
     @Transactional
     @CurrentUser
-    public ProjectUpdateResponse getProject(Long projectId) {
+    public ProjectInfoResult getProject(Long projectId) {
         log.info("프로젝트 정보 조회: projectId={}", projectId);
 
         Project project = projectRepository.findById(projectId)
@@ -79,7 +81,34 @@ public class ProjectService { //TODO: 인증 과정 중 예외 발생 시 BaseEx
                         up.getColor()))
                 .collect(Collectors.toList());
 
-        return new ProjectUpdateResponse(project.getId(), project.getName(), project.getContent(), userProjectDtos);
+        return new ProjectInfoResult(project.getId(), project.getName(), project.getContent(), userProjectDtos);
+    }
+
+    @Transactional
+    @CurrentUser
+    public List<ProjectListResult> getProjectList() {
+        User currentUser = CurrentUserHolder.get();
+
+        if (currentUser == null) {
+            throw new BaseException(USER_NOT_AUTHENTICATED);
+        }
+
+        log.info("프로젝트 리스트 조회: userId={}", currentUser.getId());
+
+        Optional<UserProject> userProject = userProjectRepository.findAllByUser(currentUser);
+
+        return userProject.stream().map(up -> {
+            Project project = up.getProject();
+            return new ProjectListResult(
+                    project.getId(),
+                    project.getName(),
+                    up.getRole(),
+                    up.getBookmark(),
+                    up.getColor(),
+                    project.getUserProjects().size(),
+                    project.getCreatedAt()
+            );
+        }).collect(Collectors.toList());
     }
 
     @Transactional

@@ -11,6 +11,8 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 import static org.focus.logmeet.common.utils.ValidationUtils.validateBindingResult;
 
 @Slf4j
@@ -31,11 +33,19 @@ public class ProjectController {
     }
 
     @GetMapping("/{projectId}")
-    public BaseResponse<ProjectUpdateResponse> getProject(@PathVariable Long projectId) {
+    public BaseResponse<ProjectInfoResult> getProject(@PathVariable Long projectId) {
         log.info("프로젝트 정보 요청: projectId={}", projectId);
-        ProjectUpdateResponse response = projectService.getProject(projectId);
-        return new BaseResponse<>(response);
+        ProjectInfoResult result = projectService.getProject(projectId);
+        return new BaseResponse<>(result);
     }
+
+    @GetMapping("/projectList")
+    public BaseResponse<List<ProjectListResult>> getProjectList() {
+        log.info("프로젝트 리스트 요청");
+        List<ProjectListResult> projectList = projectService.getProjectList();
+        return new BaseResponse<>(projectList);
+    }
+
 
     @PutMapping("/{projectId}")
     public BaseResponse<Void> updateProject(@PathVariable Long projectId, @RequestBody ProjectUpdateRequest request) {
