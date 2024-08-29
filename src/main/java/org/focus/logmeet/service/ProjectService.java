@@ -10,7 +10,6 @@ import org.focus.logmeet.domain.UserProject;
 import org.focus.logmeet.domain.enums.ProjectColor;
 import org.focus.logmeet.repository.ProjectRepository;
 import org.focus.logmeet.repository.UserProjectRepository;
-import org.focus.logmeet.repository.UserRepository;
 import org.focus.logmeet.security.annotation.CurrentUser;
 import org.focus.logmeet.security.aspect.CurrentUserHolder;
 import org.springframework.stereotype.Service;

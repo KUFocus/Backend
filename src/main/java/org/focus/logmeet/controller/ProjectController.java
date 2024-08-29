@@ -18,7 +18,7 @@ import static org.focus.logmeet.common.utils.ValidationUtils.validateBindingResu
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/project")
+@RequestMapping("/projects")
 public class ProjectController {
 
     private final ProjectService projectService;
