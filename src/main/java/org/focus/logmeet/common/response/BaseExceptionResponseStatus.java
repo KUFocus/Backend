@@ -37,7 +37,20 @@ public enum BaseExceptionResponseStatus implements ResponseStatus {
     PROJECT_NOT_FOUND(false, 5000, "존재하지 않는 프로젝트입니다."),
     USER_NOT_IN_PROJECT(false, 5001, "프로젝트 내에 존재하지 않는 회원입니다."),
     USER_NOT_LEADER(false, 5002, "프로젝트 리더가 아닙니다."),
-    CANNOT_EXPEL_SELF(false, 5003, "자기 자신은 추방할 수 없습니다.");
+    CANNOT_EXPEL_SELF(false, 5003, "자기 자신은 추방할 수 없습니다."),
+
+    // Minutes 오류
+    MINUTES_VOICE_FILE_SAVE_ERROR(false, 6000, "음성 파일 저장 중 오류가 발생했습니다."),
+    MINUTES_VOICE_FILE_UPLOAD_ERROR(false, 6001, "Object Storage에 음성 파일 업로드 중 오류가 발생했습니다."),
+    MINUTES_FLASK_SERVER_COMMUNICATION_ERROR(false, 6002, "Flask 서버와의 통신 중 오류가 발생했습니다."),
+    MINUTES_TEXT_FILE_SAVE_ERROR(false, 6003, "텍스트 파일 저장 중 오류가 발생했습니다."),
+    MINUTES_TEXT_FILE_UPLOAD_ERROR(false, 6004, "Object Storage에 텍스트 파일 업로드 중 오류가 발생했습니다."),
+    MINUTES_PHOTO_FILE_SAVE_ERROR(false, 6005, "사진 파일 저장 중 오류가 발생했습니다."),
+    MINUTES_PHOTO_FILE_UPLOAD_ERROR(false, 6006, "Object Storage에 사진 파일 업로드 중 오류가 발생했습니다."),
+    S3_CLIENT_CREATION_ERROR(false, 6007, "S3 클라이언트 생성 중 오류가 발생했습니다."),
+    S3_FILE_UPLOAD_ERROR(false, 6008, "S3에 파일 업로드 중 오류가 발생했습니다.");
+
+
 
 
 
