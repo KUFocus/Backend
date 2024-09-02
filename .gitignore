@@ -39,3 +39,6 @@ out/
 ### AWS ###
 src/main/resources/application-aws.properties
 logkey.pem
+
+### GPT ###
+src/main/resources/application-gpt.properties

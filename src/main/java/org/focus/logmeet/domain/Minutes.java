@@ -3,6 +3,7 @@ package org.focus.logmeet.domain;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
+import org.focus.logmeet.domain.enums.Status;
 import org.focus.logmeet.domain.util.BaseTimeEntity;
 
 @Entity
@@ -27,5 +28,14 @@ public class Minutes extends BaseTimeEntity {
     @Column(length = 500)
     private String content;
 
-    private String status;
+    @Column
+    private String voiceFilePath;
+
+    @Column
+    private String photoFilePath;
+
+    @Column(length = 2000)
+    private String summary;
+
+    private Status status;
 }
