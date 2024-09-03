@@ -3,11 +3,10 @@ package org.focus.logmeet.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.focus.logmeet.common.response.BaseResponse;
+import org.focus.logmeet.controller.dto.minutes.MinutesCreateRequest;
+import org.focus.logmeet.controller.dto.minutes.MinutesCreateResponse;
 import org.focus.logmeet.service.MinutesService;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -19,34 +18,23 @@ public class MinutesController {
     private final MinutesService minutesService;
 
     @PostMapping("/upload/voice")
-    public Mono<BaseResponse<String>> uploadVoice(
-            @RequestParam("file") String base64FileData,
-            @RequestParam("minutesName") String minutesName,
-            @RequestParam("fileName") String fileName,
-            @RequestParam("projectId") Long projectId) {
-        log.info("음성 파일 업로드 요청: minutesName={}, fileName={}, projectId={}", minutesName, fileName, projectId);
-        return minutesService.processAndUploadVoice(base64FileData, minutesName, fileName, projectId)
-                .map(BaseResponse::new);
+    public Mono<BaseResponse<MinutesCreateResponse>> uploadVoice(@RequestBody MinutesCreateRequest request) {
+        log.info("음성 파일 업로드 요청: minutesName={}, fileName={}, projectId={}", request.getMinutesName(), request.getFileName(), request.getProjectId());
+        return minutesService.processAndUploadVoice(request.getBase64FileData(), request.getMinutesName(), request.getFileName(), request.getProjectId())
+                .map(result -> new BaseResponse<>(new MinutesCreateResponse(result.getId(), result.getProject().getId())));
     }
 
     @PostMapping("/upload/photo")
-    public BaseResponse<String> uploadPhoto(
-            @RequestParam("file") String base64FileData,
-            @RequestParam("minutesName") String minutesName,
-            @RequestParam("fileName") String fileName,
-            @RequestParam("projectId") Long projectId) {
-        log.info("사진 파일 업로드 요청: fileName={}, projectId={}", fileName, projectId);
-        minutesService.uploadPhoto(base64FileData, minutesName, fileName, projectId);
-        return new BaseResponse<>("Photo uploaded successfully.");
+    public BaseResponse<MinutesCreateResponse> uploadPhoto(@RequestBody MinutesCreateRequest request) {
+        log.info("사진 파일 업로드 요청: minutesName={}, fileName={}, projectId={}", request.getMinutesName(), request.getFileName(), request.getProjectId());
+        Long minutesId = minutesService.uploadPhoto(request.getBase64FileData(), request.getMinutesName(), request.getFileName(), request.getProjectId());
+        return new BaseResponse<>(new MinutesCreateResponse(minutesId, request.getProjectId()));
     }
 
     @PostMapping("/upload/manualEntry")
-    public BaseResponse<String> uploadManualEntry(
-            @RequestParam("text") String textContent,
-            @RequestParam("minutesName") String minutesName,
-            @RequestParam("projectId") Long projectId) {
-        log.info("직접 작성한 회의록 업로드 요청: fileName={}, projectId={}", minutesName, projectId);
-        minutesService.saveAndUploadManualEntry(textContent, minutesName, projectId);
-        return new BaseResponse<>("Manual entry uploaded successfully.");
+    public BaseResponse<MinutesCreateResponse> uploadManualEntry(@RequestBody MinutesCreateRequest request) {
+        log.info("직접 작성한 회의록 업로드 요청: fileName={}, projectId={}", request.getMinutesName(), request.getProjectId());
+        Long minutesId = minutesService.saveAndUploadManualEntry(request.getTextContent(), request.getMinutesName(), request.getProjectId());
+        return new BaseResponse<>(new MinutesCreateResponse(minutesId, request.getProjectId()));
     }
 }
