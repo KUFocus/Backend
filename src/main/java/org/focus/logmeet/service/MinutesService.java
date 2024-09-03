@@ -3,23 +3,29 @@ package org.focus.logmeet.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.focus.logmeet.common.exception.BaseException;
+import org.focus.logmeet.controller.dto.minutes.MinutesCreateResponse;
 import org.focus.logmeet.domain.Minutes;
 import org.focus.logmeet.domain.Project;
 import org.focus.logmeet.repository.MinutesRepository;
 import org.focus.logmeet.repository.ProjectRepository;
+import org.focus.logmeet.service.S3Service;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.net.URI;
 import java.util.Base64;
+import java.util.Objects;
 
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
 import static org.focus.logmeet.domain.enums.Status.ACTIVE;
@@ -32,11 +38,11 @@ public class MinutesService {
     private final S3Service s3Service;
     private final MinutesRepository minutesRepository;
     private final ProjectRepository projectRepository;
-    private final WebClient webClient;
+    private final RestTemplate restTemplate;
 
     // 음성을 업로드 하고, 텍스트 추출 후 회의록 저장
-    public Mono<Minutes> processAndUploadVoice(String base64FileData, String minutesName, String fileName, Long projectId) {
-        Project project = projectRepository.findById(projectId) // non-blocking 에서 blocking call 이 starvation 을 유발할 수 있다.. 뭐지?
+    public MinutesCreateResponse processAndUploadVoice(String base64FileData, String minutesName, String fileName, Long projectId) {
+        Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new BaseException(PROJECT_NOT_FOUND));
 
         // 새로운 Minutes 엔티티 생성
@@ -56,41 +62,40 @@ public class MinutesService {
             throw new BaseException(MINUTES_VOICE_FILE_UPLOAD_ERROR);
         }
 
-        // Flask 서버에 비동기 요청 보내기
-        return webClient.post()
-                .uri("http://localhost:5001/process_audio") // TODO: 서버 URI 설정 필요
-                .retrieve()
-                .bodyToMono(String.class)
-                .flatMap(response -> Mono.fromCallable(() -> {
-                    try {
-                        String textFileName = (fileName != null) ? fileName.replace(".wav", ".txt") : "default_name.txt";
-                        Path textFilePath = Paths.get(System.getProperty("java.io.tmpdir"), textFileName);
+        try {
+            // 파일을 Flask 서버에 전송
+            MultipartBodyBuilder builder = new MultipartBodyBuilder();
+            builder.part("file", new FileSystemResource(tempFile));
+            builder.part("fileName", fileName);
 
-                        Files.writeString(textFilePath, response, StandardCharsets.UTF_8);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
-                        // 변환된 텍스트를 Object Storage에 업로드
-                        s3Service.uploadFile("minutes_text", textFileName, textFilePath.toFile());
-                        minutes.setContent(response);
+            MultiValueMap<String, HttpEntity<?>> multipartRequest = builder.build();
+            HttpEntity<MultiValueMap<String, HttpEntity<?>>> requestEntity = new HttpEntity<>(multipartRequest, headers);
 
-                        // 새로운 Minutes 엔티티 저장
-                        minutesRepository.save(minutes);
+            URI uri = UriComponentsBuilder.fromHttpUrl("http://localhost:5001/process_audio")
+                    .build().toUri();
 
-                    } catch (IOException e) {
-                        log.error("텍스트 파일 저장 중 오류 발생", e);
-                        throw new BaseException(MINUTES_TEXT_FILE_SAVE_ERROR);
-                    } catch (Exception e) {
-                        log.error("Object Storage에 텍스트 파일 업로드 중 오류 발생", e);
-                        throw new BaseException(MINUTES_TEXT_FILE_UPLOAD_ERROR);
-                    }
-                    return minutes; // 작업이 완료되면 Minutes 객체를 반환
-                }).subscribeOn(Schedulers.boundedElastic()))
-                .onErrorResume(e -> {
-                    log.error("Flask 서버와의 통신 중 오류 발생", e);
-                    return Mono.error(new BaseException(MINUTES_FLASK_SERVER_COMMUNICATION_ERROR));
-                });
+            ResponseEntity<String> response = restTemplate.postForEntity(uri, requestEntity, String.class);
+
+            // 변환된 텍스트를 Minutes 객체에 설정
+            minutes.setContent(Objects.requireNonNull(response.getBody()));
+
+            // 새로운 Minutes 엔티티 저장
+            minutesRepository.save(minutes);
+
+        } catch (Exception e) {
+            log.error("텍스트 처리 중 오류 발생", e);
+            throw new BaseException(MINUTES_TEXT_FILE_UPLOAD_ERROR);
+        }
+
+        // MinutesCreateResponse 객체로 반환
+        return new MinutesCreateResponse(minutes.getId(), minutes.getProject().getId());
     }
 
-    public Long uploadPhoto(String base64FileData, String minutesName, String fileName, Long projectId) {
+    // 사진을 업로드 하고, 회의록 저장
+    public MinutesCreateResponse uploadPhoto(String base64FileData, String minutesName, String fileName, Long projectId) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new BaseException(PROJECT_NOT_FOUND));
 
@@ -111,10 +116,13 @@ public class MinutesService {
 
         // Minutes 객체 저장
         minutesRepository.save(minutes);
-        return minutes.getId();
+
+        // MinutesCreateResponse 객체로 반환
+        return new MinutesCreateResponse(minutes.getId(), minutes.getProject().getId());
     }
 
-    public Long saveAndUploadManualEntry(String textContent, String minutesName, Long projectId) {
+    // 수동 입력된 회의록을 저장
+    public MinutesCreateResponse saveAndUploadManualEntry(String textContent, String minutesName, Long projectId) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new BaseException(PROJECT_NOT_FOUND));
 
@@ -125,7 +133,9 @@ public class MinutesService {
 
         // Minutes 객체 저장
         minutesRepository.save(minutes);
-        return minutes.getId();
+
+        // MinutesCreateResponse 객체로 반환
+        return new MinutesCreateResponse(minutes.getId(), minutes.getProject().getId());
     }
 
     // Base64 문자열을 파일로 디코딩하는 메서드
@@ -138,10 +148,8 @@ public class MinutesService {
         try (FileOutputStream fos = new FileOutputStream(tempFile)) {
             fos.write(decodedBytes);
         } catch (IOException e) {
-            throw new RuntimeException("파일 디코딩 중 오류가 발생했습니다.", e);
+            throw new BaseException(S3_FILE_DECODING_ERROR);
         }
-
-        // 생성된 파일 객체 반환
         return tempFile;
     }
 }
