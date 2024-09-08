@@ -25,7 +25,7 @@ public class Minutes extends BaseTimeEntity {
     @Column(length = 30, nullable = false)
     private String name;
 
-    @Column(length = 500)
+    @Column(columnDefinition = "TEXT")
     private String content;
 
     @Column

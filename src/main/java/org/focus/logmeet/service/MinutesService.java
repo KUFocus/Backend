@@ -8,7 +8,6 @@ import org.focus.logmeet.domain.Minutes;
 import org.focus.logmeet.domain.Project;
 import org.focus.logmeet.repository.MinutesRepository;
 import org.focus.logmeet.repository.ProjectRepository;
-import org.focus.logmeet.service.S3Service;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -16,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -41,7 +41,9 @@ public class MinutesService {
     private final RestTemplate restTemplate;
 
     // 음성을 업로드 하고, 텍스트 추출 후 회의록 저장
+    @Transactional
     public MinutesCreateResponse processAndUploadVoice(String base64FileData, String minutesName, String fileName, Long projectId) {
+        log.info("음성 업로드로 회의록 생성 시도: minutesName={}", minutesName);
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new BaseException(PROJECT_NOT_FOUND));
 
@@ -79,6 +81,8 @@ public class MinutesService {
 
             ResponseEntity<String> response = restTemplate.postForEntity(uri, requestEntity, String.class);
 
+            log.info("Flask 서버로부터 변환된 텍스트 수신: {}", response.getBody());
+
             // 변환된 텍스트를 Minutes 객체에 설정
             minutes.setContent(Objects.requireNonNull(response.getBody()));
 
@@ -89,13 +93,15 @@ public class MinutesService {
             log.error("텍스트 처리 중 오류 발생", e);
             throw new BaseException(MINUTES_TEXT_FILE_UPLOAD_ERROR);
         }
+        log.info("음성 업로드로 회의록 생성 성공: minutesName={}", minutesName);
 
-        // MinutesCreateResponse 객체로 반환
         return new MinutesCreateResponse(minutes.getId(), minutes.getProject().getId());
     }
 
     // 사진을 업로드 하고, 회의록 저장
     public MinutesCreateResponse uploadPhoto(String base64FileData, String minutesName, String fileName, Long projectId) {
+        log.info("사진 업로드로 회의록 생성 시도: minutesName={}", minutesName);
+
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new BaseException(PROJECT_NOT_FOUND));
 
@@ -117,12 +123,15 @@ public class MinutesService {
         // Minutes 객체 저장
         minutesRepository.save(minutes);
 
-        // MinutesCreateResponse 객체로 반환
+        log.info("사진 업로드로 회의록 생성 성공: minutesName={}", minutesName);
+
         return new MinutesCreateResponse(minutes.getId(), minutes.getProject().getId());
     }
 
     // 수동 입력된 회의록을 저장
     public MinutesCreateResponse saveAndUploadManualEntry(String textContent, String minutesName, Long projectId) {
+        log.info("직접 회의록 생성 시도: minutesName={}", minutesName);
+
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new BaseException(PROJECT_NOT_FOUND));
 
@@ -134,7 +143,8 @@ public class MinutesService {
         // Minutes 객체 저장
         minutesRepository.save(minutes);
 
-        // MinutesCreateResponse 객체로 반환
+        log.info("직접 회의록 생성 성공: minutesName={}", minutesName);
+
         return new MinutesCreateResponse(minutes.getId(), minutes.getProject().getId());
     }
 
