@@ -7,9 +7,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class MinutesCreateRequest {
-    private String base64FileData;
+public class MinutesManuallyCreateRequest {
     private String minutesName;
-    private String fileName;
+    private String textContent;
     private Long projectId;
 }
