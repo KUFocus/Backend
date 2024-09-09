@@ -20,7 +20,6 @@ import java.io.IOException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.EXPIRED_TOKEN;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -51,8 +50,10 @@ class JwtAuthFilterTest {
     void testDoFilterInternal_ValidAccessToken() throws ServletException, IOException {
         //given
         String accessToken = "validAccessToken";
+        request.addHeader("Authorization", "Bearer " + accessToken);
 
-        when(jwtProvider.getHeaderToken(request, "Access")).thenReturn(accessToken);
+        when(jwtProvider.getHeaderToken(request)).thenReturn(accessToken);
+        when(jwtProvider.getTokenType(accessToken)).thenReturn("Access");
         when(jwtProvider.tokenValidation(accessToken)).thenReturn(true);
         when(jwtProvider.getEmailFromToken(accessToken)).thenReturn("test@example.com");
         when(jwtProvider.createAuthentication("test@example.com")).thenReturn(authentication);
@@ -70,18 +71,19 @@ class JwtAuthFilterTest {
     @DisplayName("리프레시 토큰이 유효한 경우 액세스 토큰 재발급 및 인증이 성공적으로 설정됨")
     void testDoFilterInternal_ValidRefreshToken() throws ServletException, IOException {
         //given
-        String accessToken = "expiredAccessToken";
         String refreshToken = "validRefreshToken";
         String newAccessToken = "newAccessToken";
+        request.addHeader("Authorization", "Bearer " + refreshToken);
 
-        when(jwtProvider.getHeaderToken(request, "Access")).thenReturn(accessToken);
-        when(jwtProvider.tokenValidation(accessToken)).thenReturn(false);
-        when(jwtProvider.getHeaderToken(request, "Refresh")).thenReturn(refreshToken);
+        when(jwtProvider.getHeaderToken(request)).thenReturn(refreshToken);
+        when(jwtProvider.getTokenType(refreshToken)).thenReturn("Refresh");
         when(jwtProvider.refreshTokenValidation(refreshToken)).thenReturn(true);
+
         when(jwtProvider.getEmailFromToken(refreshToken)).thenReturn("test@example.com");
         when(jwtProvider.createToken("test@example.com", "Access")).thenReturn(newAccessToken);
-        when(jwtProvider.createAuthentication("test@example.com")).thenReturn(authentication);
+
         when(jwtProvider.getEmailFromToken(newAccessToken)).thenReturn("test@example.com");
+        when(jwtProvider.createAuthentication("test@example.com")).thenReturn(authentication);
 
         //when
         jwtAuthFilter.doFilterInternal(request, response, filterChain);
@@ -97,12 +99,11 @@ class JwtAuthFilterTest {
     @DisplayName("리프레시 토큰이 만료된 경우 예외가 발생함")
     void testDoFilterInternal_ExpiredRefreshToken() throws ServletException, IOException {
         //given
-        String accessToken = "expiredAccessToken";
         String refreshToken = "expiredRefreshToken";
+        request.addHeader("Authorization", "Bearer " + refreshToken);
 
-        when(jwtProvider.getHeaderToken(request, "Access")).thenReturn(accessToken);
-        when(jwtProvider.tokenValidation(accessToken)).thenReturn(false);
-        when(jwtProvider.getHeaderToken(request, "Refresh")).thenReturn(refreshToken);
+        when(jwtProvider.getHeaderToken(request)).thenReturn(refreshToken);
+        when(jwtProvider.getTokenType(refreshToken)).thenReturn("Refresh");
         when(jwtProvider.refreshTokenValidation(refreshToken)).thenReturn(false);
 
         //when & then

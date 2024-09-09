@@ -5,7 +5,9 @@ import org.focus.logmeet.controller.dto.auth.AuthLoginRequest;
 import org.focus.logmeet.controller.dto.auth.AuthLoginResponse;
 import org.focus.logmeet.controller.dto.auth.AuthSignupRequest;
 import org.focus.logmeet.controller.dto.auth.AuthSignupResponse;
+import org.focus.logmeet.domain.RefreshToken;
 import org.focus.logmeet.domain.User;
+import org.focus.logmeet.repository.RefreshTokenRepository;
 import org.focus.logmeet.repository.UserRepository;
 import org.focus.logmeet.security.jwt.JwtProvider;
 import org.focus.logmeet.security.jwt.JwtTokenDto;
@@ -24,8 +26,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest { // TODO: 중복된 부분 SetUp 필요
@@ -40,6 +41,9 @@ class AuthServiceTest { // TODO: 중복된 부분 SetUp 필요
 
     @Mock
     private JwtProvider jwtProvider;
+
+    @Mock
+    private RefreshTokenRepository refreshTokenRepository;
 
     @Test
     @DisplayName("회원가입이 성공적으로 처리됨")
@@ -80,6 +84,7 @@ class AuthServiceTest { // TODO: 중복된 부분 SetUp 필요
         when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
         when(jwtProvider.createAllToken(anyString())).thenReturn(tokenDto);
+        when(refreshTokenRepository.findByUserEmail(anyString())).thenReturn(Optional.empty());
 
         //when
         AuthLoginResponse response = authService.login(request);
@@ -88,6 +93,8 @@ class AuthServiceTest { // TODO: 중복된 부분 SetUp 필요
         assertThat(response).isNotNull();
         assertThat(response.getAccessToken()).isEqualTo("accessToken");
         assertThat(response.getRefreshToken()).isEqualTo("refreshToken");
+
+        verify(refreshTokenRepository, times(1)).save(any(RefreshToken.class));
     }
 
     @Test
