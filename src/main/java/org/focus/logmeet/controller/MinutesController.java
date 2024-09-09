@@ -31,9 +31,11 @@ public class MinutesController {
     }
 
     @PostMapping("/upload/manualEntry")
-    public BaseResponse<MinutesCreateResponse> uploadManualEntry(@RequestBody MinutesCreateRequest request) {
+    public BaseResponse<MinutesCreateResponse> uploadManualEntry(
+            @RequestBody MinutesCreateRequest request,
+            @RequestParam String textContent) {
         log.info("직접 작성한 회의록 업로드 요청: minutesName={}, projectId={}", request.getMinutesName(), request.getProjectId());
-        MinutesCreateResponse response = minutesService.saveAndUploadManualEntry(request.getTextContent(), request.getMinutesName(), request.getProjectId());
+        MinutesCreateResponse response = minutesService.saveAndUploadManualEntry(textContent, request.getMinutesName(), request.getProjectId());
         return new BaseResponse<>(response);
     }
 }
