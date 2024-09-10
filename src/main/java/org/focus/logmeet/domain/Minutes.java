@@ -3,9 +3,11 @@ package org.focus.logmeet.domain;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
+import org.focus.logmeet.domain.enums.MinutesType;
 import org.focus.logmeet.domain.enums.Status;
 import org.focus.logmeet.domain.util.BaseTimeEntity;
 
+@Builder
 @Entity
 @Getter
 @Setter
@@ -37,5 +39,12 @@ public class Minutes extends BaseTimeEntity {
     @Column(length = 2000)
     private String summary;
 
-    private Status status;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private Status status = Status.ACTIVE;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private MinutesType type;
 }

@@ -5,6 +5,7 @@ import lombok.*;
 import org.focus.logmeet.domain.enums.Status;
 import org.focus.logmeet.domain.util.BaseTimeEntity;
 
+import java.lang.reflect.Type;
 import java.util.List;
 
 @Entity
@@ -30,5 +31,9 @@ public class Project extends BaseTimeEntity {
 
     @Column(length = 500)
     private String content;
-    private Status status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private Status status = Status.ACTIVE;
 }

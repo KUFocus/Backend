@@ -6,6 +6,7 @@ import org.focus.logmeet.common.exception.BaseException;
 import org.focus.logmeet.controller.dto.minutes.MinutesCreateResponse;
 import org.focus.logmeet.domain.Minutes;
 import org.focus.logmeet.domain.Project;
+import org.focus.logmeet.domain.enums.MinutesType;
 import org.focus.logmeet.repository.MinutesRepository;
 import org.focus.logmeet.repository.ProjectRepository;
 import org.springframework.core.io.FileSystemResource;
@@ -28,6 +29,7 @@ import java.util.Base64;
 import java.util.Objects;
 
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
+import static org.focus.logmeet.domain.enums.MinutesType.*;
 import static org.focus.logmeet.domain.enums.Status.ACTIVE;
 
 @Slf4j
@@ -51,7 +53,7 @@ public class MinutesService {
         Minutes minutes = new Minutes();
         minutes.setProject(project);
         minutes.setName(minutesName);
-        minutes.setStatus(ACTIVE);
+        minutes.setType(VOICE);
 
         File tempFile = decodeBase64ToFile(base64FileData, fileName);
 
@@ -108,6 +110,7 @@ public class MinutesService {
         Minutes minutes = new Minutes();
         minutes.setProject(project);
         minutes.setName(minutesName);
+        minutes.setType(PICTURE);
 
         File tempFile = decodeBase64ToFile(base64FileData, fileName);
 
@@ -139,6 +142,7 @@ public class MinutesService {
         minutes.setProject(project);
         minutes.setName(minutesName);
         minutes.setContent(textContent);
+        minutes.setType(MANUAL);
 
         // Minutes 객체 저장
         minutesRepository.save(minutes);
