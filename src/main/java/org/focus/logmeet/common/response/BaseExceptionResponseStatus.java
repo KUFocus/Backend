@@ -40,13 +40,15 @@ public enum BaseExceptionResponseStatus implements ResponseStatus {
     CANNOT_EXPEL_SELF(false, 5003, "자기 자신은 추방할 수 없습니다."),
 
     // Minutes 오류
-    MINUTES_VOICE_FILE_SAVE_ERROR(false, 6000, "음성 파일 저장 중 오류가 발생했습니다."),
-    MINUTES_VOICE_FILE_UPLOAD_ERROR(false, 6001, "Object Storage에 음성 파일 업로드 중 오류가 발생했습니다."),
-    MINUTES_FLASK_SERVER_COMMUNICATION_ERROR(false, 6002, "Flask 서버와의 통신 중 오류가 발생했습니다."),
-    MINUTES_TEXT_FILE_SAVE_ERROR(false, 6003, "텍스트 파일 저장 중 오류가 발생했습니다."),
-    MINUTES_TEXT_FILE_UPLOAD_ERROR(false, 6004, "Object Storage에 텍스트 파일 업로드 중 오류가 발생했습니다."),
-    MINUTES_PHOTO_FILE_SAVE_ERROR(false, 6005, "사진 파일 저장 중 오류가 발생했습니다."),
-    MINUTES_PHOTO_FILE_UPLOAD_ERROR(false, 6006, "Object Storage에 사진 파일 업로드 중 오류가 발생했습니다."),
+    MINUTES_NOT_FOUND(false, 6000, "존재하지 않는 회의록입니다."),
+    MINUTES_VOICE_FILE_SAVE_ERROR(false, 6001, "음성 파일 저장 중 오류가 발생했습니다."),
+    MINUTES_VOICE_FILE_UPLOAD_ERROR(false, 6002, "Object Storage에 음성 파일 업로드 중 오류가 발생했습니다."),
+    MINUTES_FLASK_SERVER_COMMUNICATION_ERROR(false, 6003, "Flask 서버와의 통신 중 오류가 발생했습니다."),
+    MINUTES_TEXT_FILE_SAVE_ERROR(false, 6004, "텍스트 파일 저장 중 오류가 발생했습니다."),
+    MINUTES_TEXT_FILE_UPLOAD_ERROR(false, 6005, "Object Storage에 텍스트 파일 업로드 중 오류가 발생했습니다."),
+    MINUTES_PHOTO_FILE_SAVE_ERROR(false, 6006, "사진 파일 저장 중 오류가 발생했습니다."),
+    MINUTES_PHOTO_FILE_UPLOAD_ERROR(false, 6007, "Object Storage에 사진 파일 업로드 중 오류가 발생했습니다."),
+    MINUTES_TYPE_NOT_FOUND(false, 6008, "존재하지 않는 fileType입니다."),
 
     // S3 오류
     S3_CLIENT_CREATION_ERROR(false, 7000, "S3 클라이언트 생성 중 오류가 발생했습니다."),

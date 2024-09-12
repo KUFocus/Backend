@@ -24,7 +24,7 @@ public class Minutes extends BaseTimeEntity {
     @JoinColumn(name = "project_id")
     private Project project;
 
-    @Column(length = 30, nullable = false)
+    @Column(length = 30)
     private String name;
 
     @Column(columnDefinition = "TEXT")
@@ -45,6 +45,5 @@ public class Minutes extends BaseTimeEntity {
     private Status status = Status.ACTIVE;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private MinutesType type;
 }
