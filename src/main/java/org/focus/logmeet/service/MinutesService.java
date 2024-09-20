@@ -77,7 +77,7 @@ public class MinutesService {
                 break;
 
             case PICTURE:
-                uploadToS3ForPicture(tempFile, fileName, minutes);
+                uploadToS3AndProcessPicture(tempFile, fileName, minutes);  // 이미지 처리 수정
                 break;
 
             default:
@@ -91,13 +91,13 @@ public class MinutesService {
         return new MinutesFileUploadResponse(minutes.getVoiceFilePath(), minutes.getType());
     }
 
-    // 임시 파일을 S3에 업로드 및 Flask 서버에 텍스트 변환 요청 처리
+    // 음성 파일을 S3에 업로드 및 Flask 서버에 텍스트 변환 요청 처리
     private void uploadToS3AndProcessVoice(File tempFile, String fileName, Minutes minutes) {
         try {
             s3Service.uploadFile("minutes_voice", fileName, tempFile);
             minutes.setVoiceFilePath("minutes_voice/" + fileName);
 
-            String content = processVoiceFile(tempFile, fileName);  // 텍스트 변환 요청
+            String content = processFileToText(tempFile, fileName, "http://localhost:5001/process_audio");  // 텍스트 변환 요청
             minutes.setContent(content);
         } catch (Exception e) {
             log.error("음성 파일 업로드 또는 텍스트 처리 중 오류 발생", e);
@@ -105,20 +105,23 @@ public class MinutesService {
         }
     }
 
-    // 사진 파일을 S3에 업로드하는 로직
-    private void uploadToS3ForPicture(File tempFile, String fileName, Minutes minutes) {
+    // 사진 파일을 S3에 업로드 및 Flask 서버에 이미지 텍스트 변환 요청
+    private void uploadToS3AndProcessPicture(File tempFile, String fileName, Minutes minutes) {
         try {
             s3Service.uploadFile("minutes_photo", fileName, tempFile);
             minutes.setPhotoFilePath("minutes_photo/" + fileName);
+
+            String content = processFileToText(tempFile, fileName, "http://localhost:5001/process_image");  // 이미지 텍스트 변환 요청
+            minutes.setContent(content);
         } catch (Exception e) {
-            log.error("사진 파일 업로드 중 오류 발생", e);
+            log.error("사진 파일 업로드 또는 텍스트 처리 중 오류 발생", e);
             throw new BaseException(MINUTES_PHOTO_FILE_UPLOAD_ERROR);
         }
     }
 
-    // 음성 파일을 Flask 서버에 전송하여 텍스트 변환하는 메서드
-    private String processVoiceFile(File tempFile, String fileName) {
-        log.info("음성 파일 텍스트 변환 시도: fileName={}", fileName);
+    // 파일을 Flask 서버에 전송하여 텍스트 변환하는 공통 메서드
+    private String processFileToText(File tempFile, String fileName, String flaskUrl) {
+        log.info("파일 텍스트 변환 시도: fileName={}, url={}", fileName, flaskUrl);
 
         try {
             MultipartBodyBuilder builder = new MultipartBodyBuilder();
@@ -131,15 +134,15 @@ public class MinutesService {
             MultiValueMap<String, HttpEntity<?>> multipartRequest = builder.build();
             HttpEntity<MultiValueMap<String, HttpEntity<?>>> requestEntity = new HttpEntity<>(multipartRequest, headers);
 
-            URI uri = UriComponentsBuilder.fromHttpUrl("http://localhost:5001/process_audio")
+            URI uri = UriComponentsBuilder.fromHttpUrl(flaskUrl)
                     .build().toUri();
 
             ResponseEntity<String> response = restTemplate.postForEntity(uri, requestEntity, String.class);
-            log.info("음성 파일 텍스트 변환 성공: fileName={}", fileName);
+            log.info("파일 텍스트 변환 성공: fileName={}", fileName);
             return Objects.requireNonNull(response.getBody());
 
         } catch (Exception e) {
-            log.error("음성 파일 텍스트 변환 중 오류 발생", e);
+            log.error("파일 텍스트 변환 중 오류 발생", e);
             throw new BaseException(MINUTES_TEXT_FILE_UPLOAD_ERROR);
         }
     }
