@@ -31,7 +31,32 @@ public enum BaseExceptionResponseStatus implements ResponseStatus {
     PASSWORD_NO_MATCH(false, 4003, "비밀번호가 일치하지 않습니다."),
     INVALID_USER_STATUS(false, 4004, "잘못된 회원 status 값입니다."),
     USER_NOT_LOGGED_IN(false, 4005, "로그인하지 않은 사용자입니다."),
-    SAME_AS_OLD_PASSWORD(false, 4006, "새 비밀번호는 기존 비밀번호와 달라야 합니다.");
+    SAME_AS_OLD_PASSWORD(false, 4006, "새 비밀번호는 기존 비밀번호와 달라야 합니다."),
+
+    // Project 오류
+    PROJECT_NOT_FOUND(false, 5000, "존재하지 않는 프로젝트입니다."),
+    USER_NOT_IN_PROJECT(false, 5001, "프로젝트 내에 존재하지 않는 회원입니다."),
+    USER_NOT_LEADER(false, 5002, "프로젝트 리더가 아닙니다."),
+    CANNOT_EXPEL_SELF(false, 5003, "자기 자신은 추방할 수 없습니다."),
+
+    // Minutes 오류
+    MINUTES_NOT_FOUND(false, 6000, "존재하지 않는 회의록입니다."),
+    MINUTES_VOICE_FILE_SAVE_ERROR(false, 6001, "음성 파일 저장 중 오류가 발생했습니다."),
+    MINUTES_VOICE_FILE_UPLOAD_ERROR(false, 6002, "Object Storage에 음성 파일 업로드 중 오류가 발생했습니다."),
+    MINUTES_FLASK_SERVER_COMMUNICATION_ERROR(false, 6003, "Flask 서버와의 통신 중 오류가 발생했습니다."),
+    MINUTES_TEXT_FILE_SAVE_ERROR(false, 6004, "텍스트 파일 저장 중 오류가 발생했습니다."),
+    MINUTES_TEXT_FILE_UPLOAD_ERROR(false, 6005, "Object Storage에 텍스트 파일 업로드 중 오류가 발생했습니다."),
+    MINUTES_PHOTO_FILE_SAVE_ERROR(false, 6006, "사진 파일 저장 중 오류가 발생했습니다."),
+    MINUTES_PHOTO_FILE_UPLOAD_ERROR(false, 6007, "Object Storage에 사진 파일 업로드 중 오류가 발생했습니다."),
+    MINUTES_TYPE_NOT_FOUND(false, 6008, "존재하지 않는 fileType입니다."),
+
+    // S3 오류
+    S3_CLIENT_CREATION_ERROR(false, 7000, "S3 클라이언트 생성 중 오류가 발생했습니다."),
+    S3_FILE_UPLOAD_ERROR(false, 7001, "S3에 파일 업로드 중 오류가 발생했습니다."),
+    S3_FILE_DECODING_ERROR(false, 7002, "파일 디코딩 중 오류가 발생했습니다.");
+
+
+
 
 
     private final boolean isSuccess;

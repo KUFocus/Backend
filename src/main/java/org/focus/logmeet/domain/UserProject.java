@@ -28,7 +28,11 @@ public class UserProject extends BaseTimeEntity {
     private Project project;
 
     @Column(nullable = false)
-    private Role role; // TODO: 역할 enum 변환
+    private Role role;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean bookmark = Boolean.FALSE;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
