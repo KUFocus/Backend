@@ -9,6 +9,6 @@ import org.focus.logmeet.domain.enums.MinutesType;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MinutesFileUploadResponse {
-    private String fileName;
+    private String filePath;
     private MinutesType fileType;
 }

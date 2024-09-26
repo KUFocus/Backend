@@ -88,14 +88,14 @@ public class MinutesService {
         minutesRepository.save(minutes);
         log.info("임시 회의록 저장 완료: minutesId={}, fileType={}", minutes.getId(), fileType);
 
-        return new MinutesFileUploadResponse(minutes.getVoiceFilePath(), minutes.getType());
+        return new MinutesFileUploadResponse(minutes.getFilePath(), minutes.getType());
     }
 
     // 음성 파일을 S3에 업로드 및 Flask 서버에 텍스트 변환 요청 처리
     private void uploadToS3AndProcessVoice(File tempFile, String fileName, Minutes minutes) {
         try {
             s3Service.uploadFile("minutes_voice", fileName, tempFile);
-            minutes.setVoiceFilePath("minutes_voice/" + fileName);
+            minutes.setFilePath("minutes_voice/" + fileName);
 
             String content = processFileToText(tempFile, fileName, "http://localhost:5001/process_audio");  // 텍스트 변환 요청
             minutes.setContent(content);
@@ -109,7 +109,7 @@ public class MinutesService {
     private void uploadToS3AndProcessPicture(File tempFile, String fileName, Minutes minutes) {
         try {
             s3Service.uploadFile("minutes_photo", fileName, tempFile);
-            minutes.setPhotoFilePath("minutes_photo/" + fileName);
+            minutes.setFilePath("minutes_photo/" + fileName);
 
             String content = processFileToText(tempFile, fileName, "http://localhost:5001/process_image");  // 이미지 텍스트 변환 요청
             minutes.setContent(content);
