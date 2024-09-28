@@ -9,6 +9,8 @@ public enum BaseExceptionResponseStatus implements ResponseStatus {
 
     // 글로벌 오류
     INVALID_INPUT_VALUE(false, 0, "요청에 잘못된 값이 존재합니다."),
+    NOT_FOUND(false, 1, "존재하지 않는 URL입니다."),
+    FORBIDDEN(false, 2, "금지된 접근입니다."),
 
     // Server, Database 오류
     SERVER_ERROR(false, 2000, "서버에서 오류가 발생하였습니다."),
@@ -49,6 +51,7 @@ public enum BaseExceptionResponseStatus implements ResponseStatus {
     MINUTES_PHOTO_FILE_SAVE_ERROR(false, 6006, "사진 파일 저장 중 오류가 발생했습니다."),
     MINUTES_PHOTO_FILE_UPLOAD_ERROR(false, 6007, "Object Storage에 사진 파일 업로드 중 오류가 발생했습니다."),
     MINUTES_TYPE_NOT_FOUND(false, 6008, "존재하지 않는 fileType입니다."),
+    MINUTES_TEXT_SUMMARY_ERROR(false, 6009, "텍스트 파일 요약 중 오류가 발생했습니다."),
 
     // S3 오류
     S3_CLIENT_CREATION_ERROR(false, 7000, "S3 클라이언트 생성 중 오류가 발생했습니다."),
