@@ -29,6 +29,13 @@ public class MinutesController {
         return new BaseResponse<>(response);
     }
 
+    //TODO: 텍스트 요약 요청 보완 필요
+    @PostMapping("/summarize-text")
+    public BaseResponse<MinutesSummarizeResponse> summarizeText(@RequestBody MinutesSummarizeRequest request) {
+        log.info("텍스트 요약 요청: extractedText={}", request.getExtractedText());
+        return null;
+    }
+
     @PostMapping("/upload-content")
     public BaseResponse<MinutesCreateResponse> uploadManualEntry(@RequestBody MinutesManuallyCreateRequest request) {
         log.info("직접 작성한 회의록 업로드 요청: minutesName={}, projectId={}", request.getMinutesName(), request.getProjectId());
