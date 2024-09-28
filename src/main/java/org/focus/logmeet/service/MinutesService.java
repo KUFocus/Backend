@@ -88,14 +88,14 @@ public class MinutesService {
         minutesRepository.save(minutes);
         log.info("임시 회의록 저장 완료: minutesId={}, fileType={}", minutes.getId(), fileType);
 
-        return new MinutesFileUploadResponse(minutes.getVoiceFilePath(), minutes.getType());
+        return new MinutesFileUploadResponse(minutes.getFilePath(), minutes.getType());
     }
 
     // 음성 파일을 S3에 업로드 및 Flask 서버에 텍스트 변환 요청 처리
     private void uploadToS3AndProcessVoice(File tempFile, String fileName, Minutes minutes) {
         try {
             s3Service.uploadFile("minutes_voice", fileName, tempFile);
-            minutes.setVoiceFilePath("minutes_voice/" + fileName);
+            minutes.setFilePath("minutes_voice/" + fileName);
 
             String content = processFileToText(tempFile, fileName, "http://localhost:5001/process_audio");  // 텍스트 변환 요청
             minutes.setContent(content);
@@ -109,7 +109,7 @@ public class MinutesService {
     private void uploadToS3AndProcessPicture(File tempFile, String fileName, Minutes minutes) {
         try {
             s3Service.uploadFile("minutes_photo", fileName, tempFile);
-            minutes.setPhotoFilePath("minutes_photo/" + fileName);
+            minutes.setFilePath("minutes_photo/" + fileName);
 
             String content = processFileToText(tempFile, fileName, "http://localhost:5001/process_image");  // 이미지 텍스트 변환 요청
             minutes.setContent(content);
@@ -121,7 +121,7 @@ public class MinutesService {
 
     // 파일을 Flask 서버에 전송하여 텍스트 변환하는 공통 메서드
     private String processFileToText(File tempFile, String fileName, String flaskUrl) {
-        log.info("파일 텍스트 변환 시도: fileName={}, url={}", fileName, flaskUrl);
+        log.info("파일 텍스트 변환 시도: fileName={}, url={}", fileName, flaskUrl); //TODO: 일정 시간 초과 시 통신 종료
 
         try {
             MultipartBodyBuilder builder = new MultipartBodyBuilder();
@@ -144,6 +144,31 @@ public class MinutesService {
         } catch (Exception e) {
             log.error("파일 텍스트 변환 중 오류 발생", e);
             throw new BaseException(MINUTES_TEXT_FILE_UPLOAD_ERROR);
+        }
+    }
+
+    // TODO: GPT 요약 API 호출 메서드 추가 보완 필요
+    private String summarizeText(String extractedText) {
+        log.info("텍스트 요약 시도: extractedText={}", extractedText);
+
+        try {
+            URI uri = UriComponentsBuilder.fromHttpUrl("http://localhost:5001/summarize_text")
+                    .build().toUri();
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            String requestBody = "{\"text\": \"" + extractedText.replace("\"", "\\\"") + "\"}";
+            HttpEntity<String> requestEntity = new HttpEntity<>(requestBody, headers);
+
+            ResponseEntity<String> response = restTemplate.postForEntity(uri, requestEntity, String.class);
+            log.info("요약 API 호출 성공: response={}", response.getBody());
+
+            return Objects.requireNonNull(response.getBody());
+
+        } catch (Exception e) {
+            log.error("텍스트 요약 중 오류 발생", e);
+            throw new BaseException(MINUTES_TEXT_SUMMARY_ERROR);
         }
     }
 

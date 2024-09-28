@@ -31,10 +31,7 @@ public class Minutes extends BaseTimeEntity {
     private String content;
 
     @Column
-    private String voiceFilePath;
-
-    @Column
-    private String photoFilePath;
+    private String filePath;
 
     @Column(length = 2000)
     private String summary;

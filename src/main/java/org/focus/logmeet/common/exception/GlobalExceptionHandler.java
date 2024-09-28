@@ -9,7 +9,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.NoHandlerFoundException;
 
+import java.nio.file.AccessDeniedException;
 import java.util.stream.Collectors;
 
 
@@ -31,9 +33,22 @@ public class GlobalExceptionHandler {
     public BaseResponse<String> handleBaseException(BaseException ex, WebRequest request) {
         return new BaseResponse<>(ex.getStatus(), ex.getMessage());
     }
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ExceptionHandler(NoHandlerFoundException.class)
+    public BaseResponse<Void> handleNotFound(NoHandlerFoundException ex, WebRequest request) {
+        return new BaseResponse<>(BaseExceptionResponseStatus.NOT_FOUND);
+    }
+
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    @ExceptionHandler(AccessDeniedException.class)
+    public BaseResponse<Void> handleAccessDenied(AccessDeniedException ex, WebRequest request) {
+        return new BaseResponse<>(BaseExceptionResponseStatus.FORBIDDEN);
+    }
+
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(Exception.class)
     public BaseResponse<Void> handleAllExceptions(Exception ex, WebRequest request) {
+        log.error("예상치 못한 오류 발생: ", ex);
         return new BaseResponse<>(BaseExceptionResponseStatus.SERVER_ERROR);
     }
 }
