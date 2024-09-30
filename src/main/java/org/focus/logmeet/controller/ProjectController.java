@@ -46,6 +46,13 @@ public class ProjectController {
         return new BaseResponse<>(projectList);
     }
 
+    @GetMapping("/bookmark-list")
+    public BaseResponse<List<ProjectListResult>> getProjectBookmarkList() {
+        log.info("프로젝트 북마크 리스트 요청");
+        List<ProjectListResult> projectBookmarkList = projectService.getProjectBookmarkList();
+        return new BaseResponse<>(projectBookmarkList);
+    }
+
 
     @PutMapping("/{projectId}")
     public BaseResponse<Void> updateProject(@PathVariable Long projectId, @RequestBody ProjectUpdateRequest request) {
@@ -73,12 +80,5 @@ public class ProjectController {
         log.info("프로젝트 삭제 요청: projectId={}", projectId);
         projectService.deleteProject(projectId);
         return new BaseResponse<>(BaseExceptionResponseStatus.SUCCESS);
-    }
-
-
-    @PostMapping("/test")
-    public Boolean testProject(String message) {
-        log.info("테스트 요청: {}", message);
-        return true;
     }
 }

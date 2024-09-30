@@ -94,7 +94,7 @@ public class ProjectService { //TODO: 인증 과정 중 예외 발생 시 BaseEx
 
         log.info("프로젝트 리스트 조회: userId={}", currentUser.getId());
 
-        Optional<UserProject> userProject = userProjectRepository.findAllByUser(currentUser);
+        List<UserProject> userProject = userProjectRepository.findAllByUser(currentUser);
 
         return userProject.stream().map(up -> {
             Project project = up.getProject();
@@ -108,6 +108,37 @@ public class ProjectService { //TODO: 인증 과정 중 예외 발생 시 BaseEx
                     project.getCreatedAt()
             );
         }).collect(Collectors.toList());
+    }
+
+    @Transactional
+    @CurrentUser
+    public List<ProjectListResult> getProjectBookmarkList() {
+        User currentUser = CurrentUserHolder.get();
+
+        if (currentUser == null) {
+            throw new BaseException(USER_NOT_AUTHENTICATED);
+        }
+
+        log.info("프로젝트 북마크 리스트 조회: userId={}", currentUser.getId());
+
+        List<UserProject> userProject = userProjectRepository.findAllByUser(currentUser);
+
+        // 북마크가 true인 경우에만 필터링하여 반환
+        return userProject.stream()
+                .filter(UserProject::getBookmark) // 북마크가 true인 것만 필터링
+                .map(up -> {
+                    Project project = up.getProject();
+                    return new ProjectListResult(
+                            project.getId(),
+                            project.getName(),
+                            up.getRole(),
+                            true,
+                            up.getColor(),
+                            project.getUserProjects().size(),
+                            project.getCreatedAt()
+                    );
+                })
+                .collect(Collectors.toList());
     }
 
     @Transactional
