@@ -3,7 +3,6 @@ package org.focus.logmeet.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.focus.logmeet.common.response.BaseExceptionResponseStatus;
 import org.focus.logmeet.common.response.BaseResponse;
 import org.focus.logmeet.controller.dto.project.*;
 import org.focus.logmeet.service.ProjectService;
@@ -13,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
 import static org.focus.logmeet.common.utils.ValidationUtils.validateBindingResult;
 
 @Slf4j
@@ -58,7 +58,7 @@ public class ProjectController {
     public BaseResponse<Void> updateProject(@PathVariable Long projectId, @RequestBody ProjectUpdateRequest request) {
         log.info("프로젝트 수정 요청 (PUT): projectId={}", projectId);
         projectService.updateProject(projectId, request.getName(), request.getContent(), request.getColor());
-        return new BaseResponse<>(BaseExceptionResponseStatus.SUCCESS);
+        return new BaseResponse<>(SUCCESS);
     }
 
     @PutMapping("/{projectId}/bookmark")
@@ -72,13 +72,20 @@ public class ProjectController {
     public BaseResponse<Void> expelMember(@RequestParam Long projectId, @RequestParam Long userId) {
         log.info("참가자 추방 요청: projectId={}, userId={}", projectId, userId);
         projectService.expelMember(projectId, userId);
-        return new BaseResponse<>(BaseExceptionResponseStatus.SUCCESS);
+        return new BaseResponse<>(SUCCESS);
     }
 
     @DeleteMapping("/{projectId}")
     public BaseResponse<Void> deleteProject(@PathVariable Long projectId) {
         log.info("프로젝트 삭제 요청: projectId={}", projectId);
         projectService.deleteProject(projectId);
-        return new BaseResponse<>(BaseExceptionResponseStatus.SUCCESS);
+        return new BaseResponse<>(SUCCESS);
+    }
+
+    @DeleteMapping("/{projectId}/leave")
+    public BaseResponse<Void> leaveProject(@PathVariable Long projectId) {
+        log.info("프로젝트 나가기 요청: projectId={}", projectId);
+        projectService.leaveProject(projectId);
+        return new BaseResponse<>(SUCCESS);
     }
 }

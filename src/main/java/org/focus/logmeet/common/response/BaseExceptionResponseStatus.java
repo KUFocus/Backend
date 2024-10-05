@@ -39,7 +39,8 @@ public enum BaseExceptionResponseStatus implements ResponseStatus {
     PROJECT_NOT_FOUND(false, 5000, "존재하지 않는 프로젝트입니다."),
     USER_NOT_IN_PROJECT(false, 5001, "프로젝트 내에 존재하지 않는 회원입니다."),
     USER_NOT_LEADER(false, 5002, "프로젝트 리더가 아닙니다."),
-    CANNOT_EXPEL_SELF(false, 5003, "자기 자신은 추방할 수 없습니다."),
+    USER_IS_LEADER(false, 5003, "프로젝트 리더는 프로젝트를 나가기 전에 새로운 리더를 임명해야합니다."),
+    CANNOT_EXPEL_SELF(false, 5004, "자기 자신은 추방할 수 없습니다."),
 
     // Minutes 오류
     MINUTES_NOT_FOUND(false, 6000, "존재하지 않는 회의록입니다."),

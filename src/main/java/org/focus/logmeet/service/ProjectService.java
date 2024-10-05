@@ -210,11 +210,28 @@ public class ProjectService { //TODO: 인증 과정 중 예외 발생 시 BaseEx
         UserProject leaderProject = validateUserAndProject(projectId);
 
         if (!leaderProject.getRole().equals(LEADER)) {
+            log.info("권한이 없는 삭제 시도: projectId={}, userId={}", projectId, leaderProject.getUser().getId());
             throw new BaseException(USER_NOT_LEADER);
         }
 
         projectRepository.delete(leaderProject.getProject());
         log.info("프로젝트 삭제 성공: projectId={}", projectId);
+    }
+
+
+    @Transactional
+    @CurrentUser
+    public void leaveProject(Long projectId) {
+        log.info("프로젝트 나가기 시도: projectId={}", projectId);
+        UserProject userProject = validateUserAndProject(projectId);
+
+        if (userProject.getRole().equals(LEADER)) {
+            log.info("프로젝트 리더의 나가기 시도: projectId={}, userId={}", projectId, userProject.getUser().getId());
+            throw new BaseException(USER_IS_LEADER);
+        }
+
+        userProjectRepository.delete(userProject);
+        log.info("프로젝트 나가기 성공: projectId={}, userId={}", projectId, userProject.getUser().getId());
     }
 
     private UserProject validateUserAndProject(Long projectId) {
