@@ -16,11 +16,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
 import static org.focus.logmeet.domain.enums.Role.LEADER;
+import static org.focus.logmeet.domain.enums.Role.MEMBER;
 import static org.focus.logmeet.domain.enums.Status.ACTIVE;
 
 @Slf4j
@@ -210,11 +212,54 @@ public class ProjectService { //TODO: 인증 과정 중 예외 발생 시 BaseEx
         UserProject leaderProject = validateUserAndProject(projectId);
 
         if (!leaderProject.getRole().equals(LEADER)) {
+            log.info("권한이 없는 삭제 시도: projectId={}, userId={}", projectId, leaderProject.getUser().getId());
             throw new BaseException(USER_NOT_LEADER);
         }
 
         projectRepository.delete(leaderProject.getProject());
         log.info("프로젝트 삭제 성공: projectId={}", projectId);
+    }
+
+    @Transactional
+    @CurrentUser
+    public ProjectLeaderDelegationResponse delegateLeader(Long projectId, Long newLeaderId) {
+        log.info("프로젝트 리더 위임 시도: projectId={}", projectId);
+        UserProject leaderProject = validateUserAndProject(projectId);
+        UserProject newLeaderProject = userProjectRepository.findByUserIdAndProject(newLeaderId, leaderProject.getProject())
+                .orElseThrow(() -> new BaseException(USER_NOT_IN_PROJECT));
+
+        if (!leaderProject.getRole().equals(LEADER)) {
+            log.info("권한이 없는 리더 위임 시도: projectId={}, userId={}", projectId, leaderProject.getUser().getId());
+            throw new BaseException(USER_NOT_LEADER);
+        }
+
+        if (Objects.equals(leaderProject.getUser().getId(), newLeaderId)) {
+            log.info("자기 자신에게 리더 위임 시도: projectId={}, newLeaderId={}", projectId, newLeaderId);
+            throw new BaseException(CANNOT_DELEGATE_SELF);
+        }
+
+        leaderProject.setRole(MEMBER);
+        newLeaderProject.setRole(LEADER);
+        userProjectRepository.save(leaderProject);
+        userProjectRepository.save(newLeaderProject);
+        log.info("프로젝트 리더 위임 성공: projectId={}, newLeaderId={}", projectId, newLeaderId);
+
+        return new ProjectLeaderDelegationResponse(projectId, newLeaderId);
+    }
+
+    @Transactional
+    @CurrentUser
+    public void leaveProject(Long projectId) {
+        log.info("프로젝트 나가기 시도: projectId={}", projectId);
+        UserProject userProject = validateUserAndProject(projectId);
+
+        if (userProject.getRole().equals(LEADER)) {
+            log.info("프로젝트 리더의 나가기 시도: projectId={}, userId={}", projectId, userProject.getUser().getId());
+            throw new BaseException(USER_IS_LEADER);
+        }
+
+        userProjectRepository.delete(userProject);
+        log.info("프로젝트 나가기 성공: projectId={}, userId={}", projectId, userProject.getUser().getId());
     }
 
     private UserProject validateUserAndProject(Long projectId) {
