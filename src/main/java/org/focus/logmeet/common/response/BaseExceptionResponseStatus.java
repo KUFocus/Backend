@@ -41,6 +41,7 @@ public enum BaseExceptionResponseStatus implements ResponseStatus {
     USER_NOT_LEADER(false, 5002, "프로젝트 리더가 아닙니다."),
     USER_IS_LEADER(false, 5003, "프로젝트 리더는 프로젝트를 나가기 전에 새로운 리더를 임명해야합니다."),
     CANNOT_EXPEL_SELF(false, 5004, "자기 자신은 추방할 수 없습니다."),
+    CANNOT_DELEGATE_SELF(false, 5005, "자기 자신에게 리더 권한을 위임할 수 없습니다."),
 
     // Minutes 오류
     MINUTES_NOT_FOUND(false, 6000, "존재하지 않는 회의록입니다."),

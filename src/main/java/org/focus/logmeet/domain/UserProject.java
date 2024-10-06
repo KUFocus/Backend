@@ -27,6 +27,7 @@ public class UserProject extends BaseTimeEntity {
     @JoinColumn(name = "project_id", nullable = false)
     private Project project;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
 

@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class ProjectLeaderDelegationResult {
+public class ProjectLeaderDelegationResponse {
     private Long projectId;
     private Long newLeaderId;
 }

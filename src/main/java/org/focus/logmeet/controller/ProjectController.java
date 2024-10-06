@@ -82,6 +82,13 @@ public class ProjectController {
         return new BaseResponse<>(SUCCESS);
     }
 
+    @PutMapping("/{projectId}/leader")
+    public BaseResponse<ProjectLeaderDelegationResponse> delegateLeader(@PathVariable Long projectId, @RequestBody ProjectLeaderDelegationRequest request) {
+        log.info("프로젝트 리더 임명 요청: projectId={}", projectId);
+        ProjectLeaderDelegationResponse result = projectService.delegateLeader(projectId, request.getNewLeaderId());
+        return new BaseResponse<>(result);
+    }
+
     @DeleteMapping("/{projectId}/leave")
     public BaseResponse<Void> leaveProject(@PathVariable Long projectId) {
         log.info("프로젝트 나가기 요청: projectId={}", projectId);
