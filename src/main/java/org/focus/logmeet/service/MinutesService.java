@@ -26,7 +26,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
@@ -95,8 +97,10 @@ public class MinutesService {
     private void uploadToS3AndProcessVoice(File tempFile, String fileName, Minutes minutes) {
         try {
             String contentType = "audio/mpeg";
-            s3Service.uploadFile("minutes_voice", fileName, tempFile, contentType);
-            minutes.setFilePath("minutes_voice/" + fileName);
+            String directory = "minutes_voice";
+            s3Service.uploadFile(directory, fileName, tempFile, contentType);
+            String fileUrl = generateFileUrl(directory, fileName);
+            minutes.setFilePath(fileUrl);
 
             String content = processFileToText(tempFile, fileName, "http://localhost:5001/process_audio");  // 텍스트 변환 요청
             minutes.setContent(content);
@@ -110,8 +114,10 @@ public class MinutesService {
     private void uploadToS3AndProcessPicture(File tempFile, String fileName, Minutes minutes) {
         try {
             String contentType = "image/jpeg";
-            s3Service.uploadFile("minutes_photo", fileName, tempFile, contentType);
-            minutes.setFilePath("minutes_photo/" + fileName);
+            String directory = "minutes_photo";
+            s3Service.uploadFile(directory, fileName, tempFile, contentType);
+            String fileUrl = generateFileUrl(directory, fileName);
+            minutes.setFilePath(fileUrl);
 
             String content = processFileToText(tempFile, fileName, "http://localhost:5001/process_image");  // 이미지 텍스트 변환 요청
             minutes.setContent(content);
@@ -213,6 +219,19 @@ public class MinutesService {
         log.info("직접 회의록 생성 성공: minutesName={}", minutesName);
 
         return new MinutesCreateResponse(minutes.getId(), minutes.getProject().getId());
+    }
+
+    // 파일 이름을 URL 인코딩하여 실제 URL을 생성하는 메서드
+    private String generateFileUrl(String directory, String fileName) {
+        String baseUrl = "https://kr.object.ncloudstorage.com/logmeet/";
+        try {
+            // 파일 이름을 URL 인코딩
+            String encodedFileName = URLEncoder.encode(fileName, "UTF-8");
+            return baseUrl + directory + "/" + encodedFileName;
+        } catch (UnsupportedEncodingException e) {
+            log.error("파일 이름 URL 인코딩 중 오류 발생: {}", e.getMessage());
+            throw new BaseException(MINUTES_FILE_URL_ENCODING_ERROR);
+        }
     }
 
     // Base64 문자열을 파일로 디코딩하는 메서드
