@@ -54,6 +54,8 @@ public enum BaseExceptionResponseStatus implements ResponseStatus {
     MINUTES_PHOTO_FILE_UPLOAD_ERROR(false, 6007, "Object Storage에 사진 파일 업로드 중 오류가 발생했습니다."),
     MINUTES_TYPE_NOT_FOUND(false, 6008, "존재하지 않는 fileType입니다."),
     MINUTES_TEXT_SUMMARY_ERROR(false, 6009, "텍스트 파일 요약 중 오류가 발생했습니다."),
+    MINUTES_FILE_URL_ENCODING_ERROR(false, 6010, "파일 이름 URL 인코딩 중 오류 발생했습니다."),
+
 
     // S3 오류
     S3_CLIENT_CREATION_ERROR(false, 7000, "S3 클라이언트 생성 중 오류가 발생했습니다."),
