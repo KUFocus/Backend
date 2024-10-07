@@ -7,6 +7,8 @@ import org.focus.logmeet.controller.dto.minutes.*;
 import org.focus.logmeet.service.MinutesService;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -71,6 +73,17 @@ public class MinutesController {
     public BaseResponse<MinutesInfoResult> getMinutes(@PathVariable Long minutesId) {
         log.info("회의록 정보 요청: minutesId={}", minutesId);
         MinutesInfoResult result = minutesService.getMinutes(minutesId);
+        return new BaseResponse<>(result);
+    }
+
+    /**
+     * 현재 유저의 회의록 리스트를 조회한다.
+     * @return 조회된 회의록 리스트 정보 (MinutesListResult)
+     */
+    @GetMapping("/minutes-list")
+    public BaseResponse<List<MinutesListResult>> getMinutesList() {
+        log.info("회의록 리스트 요청");
+        List<MinutesListResult> result = minutesService.getMinutesList();
         return new BaseResponse<>(result);
     }
 }

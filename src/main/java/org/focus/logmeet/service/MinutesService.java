@@ -6,11 +6,18 @@ import org.focus.logmeet.common.exception.BaseException;
 import org.focus.logmeet.controller.dto.minutes.MinutesCreateResponse;
 import org.focus.logmeet.controller.dto.minutes.MinutesFileUploadResponse;
 import org.focus.logmeet.controller.dto.minutes.MinutesInfoResult;
+import org.focus.logmeet.controller.dto.minutes.MinutesListResult;
 import org.focus.logmeet.domain.Minutes;
 import org.focus.logmeet.domain.Project;
+import org.focus.logmeet.domain.User;
+import org.focus.logmeet.domain.UserProject;
 import org.focus.logmeet.domain.enums.MinutesType;
+import org.focus.logmeet.domain.enums.ProjectColor;
 import org.focus.logmeet.repository.MinutesRepository;
 import org.focus.logmeet.repository.ProjectRepository;
+import org.focus.logmeet.repository.UserProjectRepository;
+import org.focus.logmeet.security.annotation.CurrentUser;
+import org.focus.logmeet.security.aspect.CurrentUserHolder;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -34,6 +41,7 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
 import static org.focus.logmeet.domain.enums.MinutesType.MANUAL;
@@ -48,6 +56,7 @@ public class MinutesService {
     private final S3Service s3Service;
     private final MinutesRepository minutesRepository;
     private final ProjectRepository projectRepository;
+    private final UserProjectRepository userProjectRepository;
     private final RestTemplate restTemplate;
 
     // 일정 시간이 지난 임시 회의록을 삭제하는 스케줄러를 추가
@@ -228,6 +237,39 @@ public class MinutesService {
         Minutes minutes = minutesRepository.findById(minutesId)
                 .orElseThrow(() -> new BaseException(MINUTES_NOT_FOUND));
         return new MinutesInfoResult(minutes.getId(), minutes.getProject().getId(), minutes.getName(), minutes.getContent(), minutes.getFilePath(), minutes.getCreatedAt());
+    }
+
+    @Transactional
+    @CurrentUser //TODO: @Transactional(readOnly = true) 왜 필요?
+    public List<MinutesListResult> getMinutesList() {
+        User currentUser = CurrentUserHolder.get();
+
+        if (currentUser == null) {
+            throw new BaseException(USER_NOT_AUTHENTICATED);
+        }
+
+        log.info("회의록 리스트 조회: userId={}", currentUser.getId());
+
+        List<UserProject> userProjects = userProjectRepository.findAllByUser(currentUser);
+
+        return userProjects.stream().flatMap(up -> {
+            Project project = up.getProject();
+            ProjectColor projectColor = up.getColor();
+
+            List<Minutes> minutesList = minutesRepository.findAllByProjectId(project.getId());
+
+            return minutesList.stream().map(minutes ->
+                    new MinutesListResult(
+                            minutes.getId(),
+                            project.getId(),
+                            minutes.getName(),
+                            projectColor,
+                            minutes.getType(),
+                            minutes.getStatus(),
+                            minutes.getCreatedAt()
+                    )
+            );
+        }).collect(Collectors.toList());
     }
 
     // 파일 이름을 URL 인코딩하여 실제 URL을 생성하는 메서드
