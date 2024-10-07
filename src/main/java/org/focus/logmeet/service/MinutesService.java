@@ -38,9 +38,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.time.LocalDateTime;
-import java.util.Base64;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
@@ -248,7 +246,7 @@ public class MinutesService {
             throw new BaseException(USER_NOT_AUTHENTICATED);
         }
 
-        log.info("회의록 리스트 조회: userId={}", currentUser.getId());
+        log.info("회의록 리스트 조회 시도: userId={}", currentUser.getId());
 
         List<UserProject> userProjects = userProjectRepository.findAllByUser(currentUser);
 
@@ -271,6 +269,35 @@ public class MinutesService {
             );
         }).collect(Collectors.toList());
     }
+
+    public List<MinutesListResult> getProjectMinutes(Long projectId) {
+        log.info("프로젝트에 속한 회의록 조회 시도: projectId={}", projectId);
+
+        List<Minutes> minutesList = minutesRepository.findAllByProjectId(projectId);
+
+        boolean exists = projectRepository.existsById(projectId);
+        if (!exists) {
+            throw new BaseException(PROJECT_NOT_FOUND);
+        }
+
+        if (minutesList.isEmpty()) {
+            log.info("프로젝트에 회의록이 없음: projectId={}", projectId);
+            return Collections.emptyList();
+        }
+
+        return minutesList.stream().map(minutes ->
+                new MinutesListResult(
+                        minutes.getId(),
+                        projectId,
+                        minutes.getName(),
+                        null,
+                        minutes.getType(),
+                        minutes.getStatus(),
+                        minutes.getCreatedAt()
+                )
+        ).collect(Collectors.toList());
+    }
+
 
     // 파일 이름을 URL 인코딩하여 실제 URL을 생성하는 메서드
     private String generateFileUrl(String directory, String fileName) {

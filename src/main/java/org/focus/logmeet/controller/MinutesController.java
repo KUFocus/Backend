@@ -83,7 +83,19 @@ public class MinutesController {
     @GetMapping("/minutes-list")
     public BaseResponse<List<MinutesListResult>> getMinutesList() {
         log.info("회의록 리스트 요청");
-        List<MinutesListResult> result = minutesService.getMinutesList();
-        return new BaseResponse<>(result);
+        List<MinutesListResult> results = minutesService.getMinutesList();
+        return new BaseResponse<>(results);
+    }
+
+    /**
+     * 특정 프로젝트의 회의록 리스트를 조회한다.
+     * @param projectId 조회할 회의록들이 속한 프로젝트의 ID
+     * @return 조회된 프로젝트의 회의록 리스트 정보 (MinutesListResult)
+     */
+    @GetMapping("/{projectId}/minutes-list")
+    public BaseResponse<List<MinutesListResult>> getProjectMinutes(@PathVariable Long projectId) {
+        log.info("특정 프로젝트에 속한 회의록 리스트 요청: projectId={}", projectId);
+        List<MinutesListResult> results = minutesService.getProjectMinutes(projectId);
+        return new BaseResponse<>(results);
     }
 }
