@@ -94,7 +94,8 @@ public class MinutesService {
     // 음성 파일을 S3에 업로드 및 Flask 서버에 텍스트 변환 요청 처리
     private void uploadToS3AndProcessVoice(File tempFile, String fileName, Minutes minutes) {
         try {
-            s3Service.uploadFile("minutes_voice", fileName, tempFile);
+            String contentType = "audio/mpeg";
+            s3Service.uploadFile("minutes_voice", fileName, tempFile, contentType);
             minutes.setFilePath("minutes_voice/" + fileName);
 
             String content = processFileToText(tempFile, fileName, "http://localhost:5001/process_audio");  // 텍스트 변환 요청
@@ -108,7 +109,8 @@ public class MinutesService {
     // 사진 파일을 S3에 업로드 및 Flask 서버에 이미지 텍스트 변환 요청
     private void uploadToS3AndProcessPicture(File tempFile, String fileName, Minutes minutes) {
         try {
-            s3Service.uploadFile("minutes_photo", fileName, tempFile);
+            String contentType = "image/jpeg";
+            s3Service.uploadFile("minutes_photo", fileName, tempFile, contentType);
             minutes.setFilePath("minutes_photo/" + fileName);
 
             String content = processFileToText(tempFile, fileName, "http://localhost:5001/process_image");  // 이미지 텍스트 변환 요청
