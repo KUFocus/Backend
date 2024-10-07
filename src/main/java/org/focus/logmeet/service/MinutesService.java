@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.focus.logmeet.common.exception.BaseException;
 import org.focus.logmeet.controller.dto.minutes.MinutesCreateResponse;
 import org.focus.logmeet.controller.dto.minutes.MinutesFileUploadResponse;
+import org.focus.logmeet.controller.dto.minutes.MinutesInfoResult;
 import org.focus.logmeet.domain.Minutes;
 import org.focus.logmeet.domain.Project;
 import org.focus.logmeet.domain.enums.MinutesType;
@@ -219,6 +220,14 @@ public class MinutesService {
         log.info("직접 회의록 생성 성공: minutesName={}", minutesName);
 
         return new MinutesCreateResponse(minutes.getId(), minutes.getProject().getId());
+    }
+
+
+    public MinutesInfoResult getMinutes(Long minutesId) {
+        log.info("회의록 정보 조회: minutesId={}", minutesId);
+        Minutes minutes = minutesRepository.findById(minutesId)
+                .orElseThrow(() -> new BaseException(MINUTES_NOT_FOUND));
+        return new MinutesInfoResult(minutes.getId(), minutes.getProject().getId(), minutes.getName(), minutes.getContent(), minutes.getFilePath(), minutes.getCreatedAt());
     }
 
     // 파일 이름을 URL 인코딩하여 실제 URL을 생성하는 메서드

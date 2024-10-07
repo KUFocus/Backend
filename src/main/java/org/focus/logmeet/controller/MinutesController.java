@@ -22,7 +22,7 @@ public class MinutesController {
         return new BaseResponse<>(response);
     }
 
-    @PostMapping("/upload-file")
+    @PostMapping("/upload-file") //TODO: 동일명 파일 업로드 시 덮어쓰는 문제 해결
     public BaseResponse<MinutesFileUploadResponse> uploadFile(@RequestBody MinutesFileUploadRequest request) {
         log.info("파일 업로드 요청: fileName={}, fileType={}", request.getFileName(), request.getFileType());
         MinutesFileUploadResponse response = minutesService.uploadFile(request.getBase64FileData(), request.getFileName(), request.getFileType());
@@ -41,5 +41,12 @@ public class MinutesController {
         log.info("직접 작성한 회의록 업로드 요청: minutesName={}, projectId={}", request.getMinutesName(), request.getProjectId());
         MinutesCreateResponse response = minutesService.saveAndUploadManualEntry(request.getTextContent(), request.getMinutesName(), request.getProjectId());
         return new BaseResponse<>(response);
+    }
+
+    @GetMapping("/{minutesId}")
+    public BaseResponse<MinutesInfoResult> getMinutes(@PathVariable Long minutesId) {
+        log.info("회의록 정보 요청: minutesId={}", minutesId);
+        MinutesInfoResult result = minutesService.getMinutes(minutesId);
+        return new BaseResponse<>(result);
     }
 }
