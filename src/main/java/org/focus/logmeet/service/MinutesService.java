@@ -15,7 +15,6 @@ import org.focus.logmeet.repository.ProjectRepository;
 import org.focus.logmeet.repository.UserProjectRepository;
 import org.focus.logmeet.security.annotation.CurrentUser;
 import org.focus.logmeet.security.aspect.CurrentUserHolder;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.*;
 import org.springframework.http.client.MultipartBodyBuilder;
@@ -159,9 +158,13 @@ public class MinutesService {
     }
 
     // TODO: GPT 요약 API 호출 메서드 추가 보완 필요
-    public MinutesSummarizeResponse summarizeText(String extractedText) {
-        log.info("텍스트 요약 시도: extractedText={}", extractedText);
+    public MinutesSummarizeResult summarizeText(Long minutesId) {
+        log.info("텍스트 요약 시도: minutesId={}", minutesId);
 
+        Minutes minutes = minutesRepository.findById(minutesId)
+                .orElseThrow(() -> new BaseException(MINUTES_NOT_FOUND));
+
+        String extractedText = minutes.getContent();
         try {
             URI uri = UriComponentsBuilder.fromHttpUrl("http://localhost:5001/summarize_text")
                     .build().toUri();
@@ -174,20 +177,22 @@ public class MinutesService {
 
             HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
 
-            ResponseEntity<MinutesSummarizeResponse> response = restTemplate.postForEntity(
+            ResponseEntity<MinutesSummarizeResult> response = restTemplate.postForEntity(
                     uri,
                     requestEntity,
-                    MinutesSummarizeResponse.class
+                    MinutesSummarizeResult.class
             );
 
             // 응답 본문 확인을 위한 디버깅
             log.info("응답 본문: {}", response.getBody());
 
             if (response.getStatusCode().is2xxSuccessful()) {
-                MinutesSummarizeResponse responseBody = response.getBody();
+                MinutesSummarizeResult responseBody = response.getBody();
 
                 if (responseBody != null && responseBody.getSummarizedText() != null) {
                     log.info("요약 API 호출 성공: 요약된 텍스트={}, 일정 정보={}", responseBody.getSummarizedText(), responseBody.getExtractedSchedule());
+                    minutes.setSummary(responseBody.getSummarizedText());
+                    minutesRepository.save(minutes);
                     return responseBody;
                 } else {
                     log.error("요약 API 응답에 'summary'가 없음: {}", responseBody);
