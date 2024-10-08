@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
 import static org.focus.logmeet.domain.enums.MinutesType.MANUAL;
+import static org.focus.logmeet.domain.enums.Role.LEADER;
 import static org.focus.logmeet.domain.enums.Status.ACTIVE;
 import static org.focus.logmeet.domain.enums.Status.TEMP;
 
@@ -321,6 +322,32 @@ public class MinutesService {
         ).collect(Collectors.toList());
     }
 
+    @Transactional
+    @CurrentUser
+    public void deleteMinutes(Long minutesId) {
+        log.info("회의록 삭제 시도: minutesId={}", minutesId);
+        User currentUser = CurrentUserHolder.get();
+        Minutes minutes = minutesRepository.findById(minutesId)
+                .orElseThrow(() -> new BaseException(MINUTES_NOT_FOUND));
+        Long projectId = minutes.getProject().getId();
+
+        if (currentUser == null) {
+            throw new BaseException(USER_NOT_AUTHENTICATED);
+        }
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new BaseException(PROJECT_NOT_FOUND));
+
+        UserProject leaderProject = userProjectRepository.findByUserAndProject(currentUser, project)
+                .orElseThrow(() -> new BaseException(USER_NOT_IN_PROJECT));
+
+        if (!leaderProject.getRole().equals(LEADER)) {
+            log.info("권한이 없는 삭제 시도: projectId={}, userId={}", minutesId, leaderProject.getUser().getId());
+            throw new BaseException(USER_NOT_LEADER);
+        }
+
+        minutesRepository.delete(minutes);
+        log.info("회의록 삭제 성공: minutesId={}", minutesId);
+    }
 
     // 파일 이름을 URL 인코딩하여 실제 URL을 생성하는 메서드
     private String generateFileUrl(String directory, String fileName) {
