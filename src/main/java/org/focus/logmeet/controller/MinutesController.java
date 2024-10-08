@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.SUCCESS;
+
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -98,5 +100,17 @@ public class MinutesController {
         log.info("특정 프로젝트에 속한 회의록 리스트 요청: projectId={}", projectId);
         List<MinutesListResult> results = minutesService.getProjectMinutes(projectId);
         return new BaseResponse<>(results);
+    }
+
+    /**
+     *
+     * @param minutesId 삭제할 회의록의 ID
+     * @return 성공 여부
+     */
+    @DeleteMapping("/{minutesId}")
+    public BaseResponse<Void> deleteMinutes(@PathVariable Long minutesId) {
+        log.info("회의록 삭제 요청: minutesId={}", minutesId);
+        minutesService.deleteMinutes(minutesId);
+        return new BaseResponse<>(SUCCESS);
     }
 }
