@@ -1,5 +1,8 @@
 package org.focus.logmeet.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.focus.logmeet.common.response.BaseResponse;
@@ -19,47 +22,41 @@ public class MinutesController {
 
     private final MinutesService minutesService;
 
-    /**
-     * 파일로 생성된 회의록의 이름과 프로젝트 정보를 업데이트한다.
-     * @param request 업데이트할 회의록의 ID, 이름, 프로젝트 ID를 포함
-     * @return 업데이트된 회의록 정보 (MinutesCreateResponse)
-     */
+    @Operation(summary = "업데이트된 회의록 정보 반환", description = "파일로 생성된 회의록의 이름과 프로젝트 정보를 업데이트합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "업데이트된 회의록 정보 반환")
+    })
     @PutMapping("/update-info")
     public BaseResponse<MinutesCreateResponse> updateMinutesInfo(@RequestBody MinutesInfoCreateRequest request) {
-        log.info("회의록 정보 설정: minutesName={}, projectId={}", request.getMinutesName(), request.getProjectId());
-        MinutesCreateResponse response = minutesService.updateMinutesInfo(request.getMinutesId(), request.getMinutesName(), request.getProjectId());
-        return new BaseResponse<>(response);
+        return new BaseResponse<>(minutesService.updateMinutesInfo(request.getMinutesId(), request.getMinutesName(), request.getProjectId()));
     }
 
-    /**
-     * 음성 또는 사진 파일을 업로드하여 회의록을 생성한다.
-     * @param request base64 인코딩된 파일 데이터, 파일 이름, 파일 타입을 포함
-     * @return 생성된 회의록의 파일 경로와 타입 정보 (MinutesFileUploadResponse)
-     */
-    @PostMapping("/upload-file") //TODO: 동일 파일명 업로드 시 덮어쓰는 문제 처리 필요
+    @Operation(summary = "음성 또는 사진 파일을 업로드하여 회의록을 생성", description = "base64 인코딩된 파일 데이터를 업로드하여 회의록을 생성합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "생성된 회의록 정보 반환")
+    })
+    @PostMapping("/upload-file")
     public BaseResponse<MinutesFileUploadResponse> uploadFile(@RequestBody MinutesFileUploadRequest request) {
         log.info("파일 업로드 요청: fileName={}, fileType={}", request.getFileName(), request.getFileType());
         MinutesFileUploadResponse response = minutesService.uploadFile(request.getBase64FileData(), request.getFileName(), request.getFileType());
         return new BaseResponse<>(response);
     }
 
-    /**
-     * 회의록의 텍스트 내용을 요약한다.
-     * @param minutesId 요약할 텍스트를 포함하는 회의록 ID
-     * @return 요약된 텍스트 정보 (MinutesSummarizeResponse)
-     */
-    @PostMapping("/{minutesId}/summarize-text") //TODO: 텍스트 요약에서 일정 추출 로직 필요
+    @Operation(summary = "회의록의 텍스트 요약", description = "회의록의 텍스트를 요약하여 반환합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "요약된 텍스트 반환")
+    })
+    @PostMapping("/{minutesId}/summarize-text")
     public BaseResponse<MinutesSummarizeResult> summarizeText(@PathVariable Long minutesId) {
         log.info("텍스트 요약 요청: minutesId={}", minutesId);
         MinutesSummarizeResult summarizedText = minutesService.summarizeText(minutesId);
         return new BaseResponse<>(summarizedText);
     }
 
-    /**
-     * 텍스트를 직접 입력하여 수동으로 회의록을 생성한다.
-     * @param request 회의록 이름, 프로젝트 ID, 입력된 텍스트 내용을 포함
-     * @return 생성된 회의록 정보 (MinutesCreateResponse)
-     */
+    @Operation(summary = "텍스트로 회의록을 생성", description = "사용자가 직접 텍스트를 입력하여 회의록을 생성합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "생성된 회의록 정보 반환")
+    })
     @PostMapping("/upload-content")
     public BaseResponse<MinutesCreateResponse> uploadManualEntry(@RequestBody MinutesManuallyCreateRequest request) {
         log.info("직접 작성한 회의록 업로드 요청: minutesName={}, projectId={}", request.getMinutesName(), request.getProjectId());
@@ -67,11 +64,10 @@ public class MinutesController {
         return new BaseResponse<>(response);
     }
 
-    /**
-     * 단일 회의록의 상세 정보를 조회한다.
-     * @param minutesId 조회할 회의록의 ID
-     * @return 조회된 회의록의 세부 정보 (MinutesInfoResult)
-     */
+    @Operation(summary = "단일 회의록 조회", description = "ID로 회의록의 상세 정보를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회된 회의록 정보 반환")
+    })
     @GetMapping("/{minutesId}")
     public BaseResponse<MinutesInfoResult> getMinutes(@PathVariable Long minutesId) {
         log.info("회의록 정보 요청: minutesId={}", minutesId);
@@ -79,10 +75,10 @@ public class MinutesController {
         return new BaseResponse<>(result);
     }
 
-    /**
-     * 현재 유저의 회의록 리스트를 조회한다.
-     * @return 조회된 회의록 리스트 정보 (MinutesListResult)
-     */
+    @Operation(summary = "현재 유저의 회의록 리스트 조회", description = "현재 유저가 생성한 모든 회의록 리스트를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회된 회의록 리스트 반환")
+    })
     @GetMapping("/minutes-list")
     public BaseResponse<List<MinutesListResult>> getMinutesList() {
         log.info("회의록 리스트 요청");
@@ -90,11 +86,10 @@ public class MinutesController {
         return new BaseResponse<>(results);
     }
 
-    /**
-     * 특정 프로젝트의 회의록 리스트를 조회한다.
-     * @param projectId 조회할 회의록들이 속한 프로젝트의 ID
-     * @return 조회된 프로젝트의 회의록 리스트 정보 (MinutesListResult)
-     */
+    @Operation(summary = "프로젝트별 회의록 조회", description = "특정 프로젝트의 회의록 리스트를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회된 프로젝트 회의록 리스트 반환")
+    })
     @GetMapping("/{projectId}/minutes-list")
     public BaseResponse<List<MinutesListResult>> getProjectMinutes(@PathVariable Long projectId) {
         log.info("특정 프로젝트에 속한 회의록 리스트 요청: projectId={}", projectId);
@@ -102,11 +97,10 @@ public class MinutesController {
         return new BaseResponse<>(results);
     }
 
-    /**
-     *
-     * @param minutesId 삭제할 회의록의 ID
-     * @return 성공 여부
-     */
+    @Operation(summary = "회의록 삭제", description = "ID로 회의록을 삭제합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "회의록 삭제 성공")
+    })
     @DeleteMapping("/{minutesId}")
     public BaseResponse<Void> deleteMinutes(@PathVariable Long minutesId) {
         log.info("회의록 삭제 요청: minutesId={}", minutesId);
