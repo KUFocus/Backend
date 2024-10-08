@@ -12,4 +12,6 @@ import java.util.List;
 public interface MinutesRepository extends JpaRepository<Minutes, Long> {
     @Query("SELECT m FROM Minutes m WHERE m.status = :status AND m.createdAt <= :timeLimit")
     List<Minutes> findOldTemporaryMinutes(@Param("status") Status status, @Param("timeLimit") LocalDateTime timeLimit);
+
+    List<Minutes> findAllByProjectId(Long projectId);
 }

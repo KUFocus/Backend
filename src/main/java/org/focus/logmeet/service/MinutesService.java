@@ -3,19 +3,20 @@ package org.focus.logmeet.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.focus.logmeet.common.exception.BaseException;
-import org.focus.logmeet.controller.dto.minutes.MinutesCreateResponse;
-import org.focus.logmeet.controller.dto.minutes.MinutesFileUploadResponse;
-import org.focus.logmeet.controller.dto.minutes.MinutesInfoResult;
+import org.focus.logmeet.controller.dto.minutes.*;
 import org.focus.logmeet.domain.Minutes;
 import org.focus.logmeet.domain.Project;
+import org.focus.logmeet.domain.User;
+import org.focus.logmeet.domain.UserProject;
 import org.focus.logmeet.domain.enums.MinutesType;
+import org.focus.logmeet.domain.enums.ProjectColor;
 import org.focus.logmeet.repository.MinutesRepository;
 import org.focus.logmeet.repository.ProjectRepository;
+import org.focus.logmeet.repository.UserProjectRepository;
+import org.focus.logmeet.security.annotation.CurrentUser;
+import org.focus.logmeet.security.aspect.CurrentUserHolder;
 import org.springframework.core.io.FileSystemResource;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -31,9 +32,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.time.LocalDateTime;
-import java.util.Base64;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
 import static org.focus.logmeet.domain.enums.MinutesType.MANUAL;
@@ -48,6 +48,7 @@ public class MinutesService {
     private final S3Service s3Service;
     private final MinutesRepository minutesRepository;
     private final ProjectRepository projectRepository;
+    private final UserProjectRepository userProjectRepository;
     private final RestTemplate restTemplate;
 
     // 일정 시간이 지난 임시 회의록을 삭제하는 스케줄러를 추가
@@ -157,9 +158,13 @@ public class MinutesService {
     }
 
     // TODO: GPT 요약 API 호출 메서드 추가 보완 필요
-    private String summarizeText(String extractedText) {
-        log.info("텍스트 요약 시도: extractedText={}", extractedText);
+    public MinutesSummarizeResult summarizeText(Long minutesId) {
+        log.info("텍스트 요약 시도: minutesId={}", minutesId);
 
+        Minutes minutes = minutesRepository.findById(minutesId)
+                .orElseThrow(() -> new BaseException(MINUTES_NOT_FOUND));
+
+        String extractedText = minutes.getContent();
         try {
             URI uri = UriComponentsBuilder.fromHttpUrl("http://localhost:5001/summarize_text")
                     .build().toUri();
@@ -167,14 +172,39 @@ public class MinutesService {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
-            String requestBody = "{\"text\": \"" + extractedText.replace("\"", "\\\"") + "\"}";
-            HttpEntity<String> requestEntity = new HttpEntity<>(requestBody, headers);
+            Map<String, String> requestBody = new HashMap<>();
+            requestBody.put("text", extractedText);
 
-            ResponseEntity<String> response = restTemplate.postForEntity(uri, requestEntity, String.class);
-            log.info("요약 API 호출 성공: response={}", response.getBody());
+            HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
 
-            return Objects.requireNonNull(response.getBody());
+            ResponseEntity<MinutesSummarizeResult> response = restTemplate.postForEntity(
+                    uri,
+                    requestEntity,
+                    MinutesSummarizeResult.class
+            );
 
+            // 응답 본문 확인을 위한 디버깅
+            log.info("응답 본문: {}", response.getBody());
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                MinutesSummarizeResult responseBody = response.getBody();
+
+                if (responseBody != null && responseBody.getSummarizedText() != null) {
+                    log.info("요약 API 호출 성공: 요약된 텍스트={}, 일정 정보={}", responseBody.getSummarizedText(), responseBody.getExtractedSchedule());
+                    minutes.setSummary(responseBody.getSummarizedText());
+                    minutesRepository.save(minutes);
+                    return responseBody;
+                } else {
+                    log.error("요약 API 응답에 'summary'가 없음: {}", responseBody);
+                    throw new BaseException(MINUTES_TEXT_SUMMARY_MISSING);
+                }
+            } else {
+                log.error("요약 API 호출 실패: 상태 코드={}", response.getStatusCode());
+                throw new BaseException(MINUTES_TEXT_SUMMARY_API_CALL_FAILED);
+            }
+
+        } catch (BaseException e) {
+            throw e;
         } catch (Exception e) {
             log.error("텍스트 요약 중 오류 발생", e);
             throw new BaseException(MINUTES_TEXT_SUMMARY_ERROR);
@@ -229,6 +259,68 @@ public class MinutesService {
                 .orElseThrow(() -> new BaseException(MINUTES_NOT_FOUND));
         return new MinutesInfoResult(minutes.getId(), minutes.getProject().getId(), minutes.getName(), minutes.getContent(), minutes.getFilePath(), minutes.getCreatedAt());
     }
+
+    @Transactional
+    @CurrentUser //TODO: @Transactional(readOnly = true) 왜 필요?
+    public List<MinutesListResult> getMinutesList() {
+        User currentUser = CurrentUserHolder.get();
+
+        if (currentUser == null) {
+            throw new BaseException(USER_NOT_AUTHENTICATED);
+        }
+
+        log.info("회의록 리스트 조회 시도: userId={}", currentUser.getId());
+
+        List<UserProject> userProjects = userProjectRepository.findAllByUser(currentUser);
+
+        return userProjects.stream().flatMap(up -> {
+            Project project = up.getProject();
+            ProjectColor projectColor = up.getColor();
+
+            List<Minutes> minutesList = minutesRepository.findAllByProjectId(project.getId());
+
+            return minutesList.stream().map(minutes ->
+                    new MinutesListResult(
+                            minutes.getId(),
+                            project.getId(),
+                            minutes.getName(),
+                            projectColor,
+                            minutes.getType(),
+                            minutes.getStatus(),
+                            minutes.getCreatedAt()
+                    )
+            );
+        }).collect(Collectors.toList());
+    }
+
+    public List<MinutesListResult> getProjectMinutes(Long projectId) {
+        log.info("프로젝트에 속한 회의록 조회 시도: projectId={}", projectId);
+
+        List<Minutes> minutesList = minutesRepository.findAllByProjectId(projectId);
+
+        boolean exists = projectRepository.existsById(projectId);
+        if (!exists) {
+            throw new BaseException(PROJECT_NOT_FOUND);
+        }
+
+        if (minutesList.isEmpty()) {
+            log.info("프로젝트에 회의록이 없음: projectId={}", projectId);
+            return Collections.emptyList();
+        }
+
+        return minutesList.stream().map(minutes ->
+                new MinutesListResult(
+                        minutes.getId(),
+                        projectId,
+                        minutes.getName(),
+                        null,
+                        minutes.getType(),
+                        minutes.getStatus(),
+                        minutes.getCreatedAt()
+                )
+        ).collect(Collectors.toList());
+    }
+
 
     // 파일 이름을 URL 인코딩하여 실제 URL을 생성하는 메서드
     private String generateFileUrl(String directory, String fileName) {

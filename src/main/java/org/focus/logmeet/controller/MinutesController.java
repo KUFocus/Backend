@@ -7,6 +7,8 @@ import org.focus.logmeet.controller.dto.minutes.*;
 import org.focus.logmeet.service.MinutesService;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -41,13 +43,14 @@ public class MinutesController {
 
     /**
      * 회의록의 텍스트 내용을 요약한다.
-     * @param request 요약할 텍스트를 포함한 요청
+     * @param minutesId 요약할 텍스트를 포함하는 회의록 ID
      * @return 요약된 텍스트 정보 (MinutesSummarizeResponse)
      */
-    @PostMapping("/summarize-text") //TODO: 텍스트 요약 API 요청 보완 필요
-    public BaseResponse<MinutesSummarizeResponse> summarizeText(@RequestBody MinutesSummarizeRequest request) {
-        log.info("텍스트 요약 요청: extractedText={}", request.getExtractedText());
-        return null;
+    @PostMapping("/{minutesId}/summarize-text") //TODO: 텍스트 요약에서 일정 추출 로직 필요
+    public BaseResponse<MinutesSummarizeResult> summarizeText(@PathVariable Long minutesId) {
+        log.info("텍스트 요약 요청: minutesId={}", minutesId);
+        MinutesSummarizeResult summarizedText = minutesService.summarizeText(minutesId);
+        return new BaseResponse<>(summarizedText);
     }
 
     /**
@@ -72,5 +75,28 @@ public class MinutesController {
         log.info("회의록 정보 요청: minutesId={}", minutesId);
         MinutesInfoResult result = minutesService.getMinutes(minutesId);
         return new BaseResponse<>(result);
+    }
+
+    /**
+     * 현재 유저의 회의록 리스트를 조회한다.
+     * @return 조회된 회의록 리스트 정보 (MinutesListResult)
+     */
+    @GetMapping("/minutes-list")
+    public BaseResponse<List<MinutesListResult>> getMinutesList() {
+        log.info("회의록 리스트 요청");
+        List<MinutesListResult> results = minutesService.getMinutesList();
+        return new BaseResponse<>(results);
+    }
+
+    /**
+     * 특정 프로젝트의 회의록 리스트를 조회한다.
+     * @param projectId 조회할 회의록들이 속한 프로젝트의 ID
+     * @return 조회된 프로젝트의 회의록 리스트 정보 (MinutesListResult)
+     */
+    @GetMapping("/{projectId}/minutes-list")
+    public BaseResponse<List<MinutesListResult>> getProjectMinutes(@PathVariable Long projectId) {
+        log.info("특정 프로젝트에 속한 회의록 리스트 요청: projectId={}", projectId);
+        List<MinutesListResult> results = minutesService.getProjectMinutes(projectId);
+        return new BaseResponse<>(results);
     }
 }

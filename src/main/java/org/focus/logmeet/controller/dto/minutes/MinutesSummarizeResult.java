@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class MinutesSummarizeResponse {
+public class MinutesSummarizeResult {
     private String summarizedText;
     private String extractedSchedule;
 }
