@@ -46,10 +46,11 @@ public class MinutesController {
      * @param request 요약할 텍스트를 포함한 요청
      * @return 요약된 텍스트 정보 (MinutesSummarizeResponse)
      */
-    @PostMapping("/summarize-text") //TODO: 텍스트 요약 API 요청 보완 필요
+    @PostMapping("/summarize-text") //TODO: 텍스트 요약에서 일정 추출 로직 + 추출된 텍스트 전달 방식 수정 고려 필요
     public BaseResponse<MinutesSummarizeResponse> summarizeText(@RequestBody MinutesSummarizeRequest request) {
         log.info("텍스트 요약 요청: extractedText={}", request.getExtractedText());
-        return null;
+        MinutesSummarizeResponse summarizedText = minutesService.summarizeText(request.getExtractedText());
+        return new BaseResponse<>(summarizedText);
     }
 
     /**

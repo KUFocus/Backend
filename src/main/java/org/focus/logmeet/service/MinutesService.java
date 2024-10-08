@@ -3,10 +3,7 @@ package org.focus.logmeet.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.focus.logmeet.common.exception.BaseException;
-import org.focus.logmeet.controller.dto.minutes.MinutesCreateResponse;
-import org.focus.logmeet.controller.dto.minutes.MinutesFileUploadResponse;
-import org.focus.logmeet.controller.dto.minutes.MinutesInfoResult;
-import org.focus.logmeet.controller.dto.minutes.MinutesListResult;
+import org.focus.logmeet.controller.dto.minutes.*;
 import org.focus.logmeet.domain.Minutes;
 import org.focus.logmeet.domain.Project;
 import org.focus.logmeet.domain.User;
@@ -18,11 +15,9 @@ import org.focus.logmeet.repository.ProjectRepository;
 import org.focus.logmeet.repository.UserProjectRepository;
 import org.focus.logmeet.security.annotation.CurrentUser;
 import org.focus.logmeet.security.aspect.CurrentUserHolder;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.FileSystemResource;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -164,7 +159,7 @@ public class MinutesService {
     }
 
     // TODO: GPT 요약 API 호출 메서드 추가 보완 필요
-    private String summarizeText(String extractedText) {
+    public MinutesSummarizeResponse summarizeText(String extractedText) {
         log.info("텍스트 요약 시도: extractedText={}", extractedText);
 
         try {
@@ -174,14 +169,37 @@ public class MinutesService {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
-            String requestBody = "{\"text\": \"" + extractedText.replace("\"", "\\\"") + "\"}";
-            HttpEntity<String> requestEntity = new HttpEntity<>(requestBody, headers);
+            Map<String, String> requestBody = new HashMap<>();
+            requestBody.put("text", extractedText);
 
-            ResponseEntity<String> response = restTemplate.postForEntity(uri, requestEntity, String.class);
-            log.info("요약 API 호출 성공: response={}", response.getBody());
+            HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
 
-            return Objects.requireNonNull(response.getBody());
+            ResponseEntity<MinutesSummarizeResponse> response = restTemplate.postForEntity(
+                    uri,
+                    requestEntity,
+                    MinutesSummarizeResponse.class
+            );
 
+            // 응답 본문 확인을 위한 디버깅
+            log.info("응답 본문: {}", response.getBody());
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                MinutesSummarizeResponse responseBody = response.getBody();
+
+                if (responseBody != null && responseBody.getSummarizedText() != null) {
+                    log.info("요약 API 호출 성공: 요약된 텍스트={}, 일정 정보={}", responseBody.getSummarizedText(), responseBody.getExtractedSchedule());
+                    return responseBody;
+                } else {
+                    log.error("요약 API 응답에 'summary'가 없음: {}", responseBody);
+                    throw new BaseException(MINUTES_TEXT_SUMMARY_MISSING);
+                }
+            } else {
+                log.error("요약 API 호출 실패: 상태 코드={}", response.getStatusCode());
+                throw new BaseException(MINUTES_TEXT_SUMMARY_API_CALL_FAILED);
+            }
+
+        } catch (BaseException e) {
+            throw e;
         } catch (Exception e) {
             log.error("텍스트 요약 중 오류 발생", e);
             throw new BaseException(MINUTES_TEXT_SUMMARY_ERROR);
