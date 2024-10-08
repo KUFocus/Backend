@@ -55,6 +55,8 @@ public enum BaseExceptionResponseStatus implements ResponseStatus {
     MINUTES_TYPE_NOT_FOUND(false, 6008, "존재하지 않는 fileType입니다."),
     MINUTES_TEXT_SUMMARY_ERROR(false, 6009, "텍스트 파일 요약 중 오류가 발생했습니다."),
     MINUTES_FILE_URL_ENCODING_ERROR(false, 6010, "파일 이름 URL 인코딩 중 오류 발생했습니다."),
+    MINUTES_TEXT_SUMMARY_MISSING(false, 6011, "텍스트 요약 반환값에 요약 정보가 없습니다."),
+    MINUTES_TEXT_SUMMARY_API_CALL_FAILED(false, 6012, "텍스트 요약 API 호출을 실패했습니다."),
 
 
     // S3 오류
