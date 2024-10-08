@@ -34,7 +34,7 @@ public class S3Service {
             // 파일을 S3에 업로드
             try (FileInputStream inputStream = new FileInputStream(file)) {
                 PutObjectRequest request = new PutObjectRequest(bucketName, fullObjectName, inputStream, metadata)
-                        .withCannedAcl(CannedAccessControlList.PublicRead);  // 파일을 전체 공개로 설정
+                        .withCannedAcl(CannedAccessControlList.PublicRead);  //TODO: 전체 공개 파일 보안 검토 필요
 
                 s3.putObject(request);
             }
