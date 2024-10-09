@@ -15,6 +15,7 @@ import org.focus.logmeet.repository.ProjectRepository;
 import org.focus.logmeet.repository.UserProjectRepository;
 import org.focus.logmeet.security.annotation.CurrentUser;
 import org.focus.logmeet.security.aspect.CurrentUserHolder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.*;
 import org.springframework.http.client.MultipartBodyBuilder;
@@ -51,6 +52,9 @@ public class MinutesService {
     private final ProjectRepository projectRepository;
     private final UserProjectRepository userProjectRepository;
     private final RestTemplate restTemplate;
+
+    @Value("${flask.server.url}")
+    private String flaskServerUrl;
 
     // 일정 시간이 지난 임시 회의록을 삭제하는 스케줄러를 추가
     @Scheduled(fixedRate = 1800000)
@@ -105,7 +109,8 @@ public class MinutesService {
             String fileUrl = generateFileUrl(directory, fileName);
             minutes.setFilePath(fileUrl);
 
-            String content = processFileToText(tempFile, fileName, "http://localhost:5001/process_audio");  // 텍스트 변환 요청
+            String audioProcessingUrl = flaskServerUrl + "/process_audio";
+            String content = processFileToText(tempFile, fileName, audioProcessingUrl);  // 텍스트 변환 요청
             minutes.setContent(content);
         } catch (Exception e) {
             log.error("음성 파일 업로드 또는 텍스트 처리 중 오류 발생", e);
@@ -122,7 +127,8 @@ public class MinutesService {
             String fileUrl = generateFileUrl(directory, fileName);
             minutes.setFilePath(fileUrl);
 
-            String content = processFileToText(tempFile, fileName, "http://localhost:5001/process_image");  // 이미지 텍스트 변환 요청
+            String imageProcessingUrl = flaskServerUrl + "/process_image";
+            String content = processFileToText(tempFile, fileName, imageProcessingUrl); // 이미지 텍스트 변환 요청
             minutes.setContent(content);
         } catch (Exception e) {
             log.error("사진 파일 업로드 또는 텍스트 처리 중 오류 발생", e);
@@ -167,7 +173,8 @@ public class MinutesService {
 
         String extractedText = minutes.getContent();
         try {
-            URI uri = UriComponentsBuilder.fromHttpUrl("http://localhost:5001/summarize_text")
+            String textSummarizationUrl = flaskServerUrl + "/summarize_text";
+            URI uri = UriComponentsBuilder.fromHttpUrl(textSummarizationUrl)
                     .build().toUri();
 
             HttpHeaders headers = new HttpHeaders();
