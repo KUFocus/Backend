@@ -35,7 +35,7 @@ public class MinutesController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "생성된 회의록 정보 반환")
     })
-    @PostMapping("/upload-file")
+    @PostMapping("/upload-file") //TODO: 동일 파일명 업로드 시 덮어쓰는 문제 처리 필요, 파일 접근 권한 관리 필요
     public BaseResponse<MinutesFileUploadResponse> uploadFile(@RequestBody MinutesFileUploadRequest request) {
         log.info("파일 업로드 요청: fileName={}, fileType={}", request.getFileName(), request.getFileType());
         MinutesFileUploadResponse response = minutesService.uploadFile(request.getBase64FileData(), request.getFileName(), request.getFileType());
@@ -46,7 +46,7 @@ public class MinutesController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "요약된 텍스트 반환")
     })
-    @PostMapping("/{minutesId}/summarize-text")
+    @PostMapping("/{minutesId}/summarize-text") //TODO: 텍스트 요약에서 일정 추출 로직 필요
     public BaseResponse<MinutesSummarizeResult> summarizeText(@PathVariable Long minutesId) {
         log.info("텍스트 요약 요청: minutesId={}", minutesId);
         MinutesSummarizeResult summarizedText = minutesService.summarizeText(minutesId);

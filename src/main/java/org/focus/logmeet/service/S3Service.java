@@ -1,6 +1,7 @@
 package org.focus.logmeet.service;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +33,9 @@ public class S3Service {
 
             // 파일을 S3에 업로드
             try (FileInputStream inputStream = new FileInputStream(file)) {
-                PutObjectRequest request = new PutObjectRequest(bucketName, fullObjectName, inputStream, metadata);
+                PutObjectRequest request = new PutObjectRequest(bucketName, fullObjectName, inputStream, metadata)
+                        .withCannedAcl(CannedAccessControlList.PublicRead);  //TODO: 전체 공개 파일 보안 검토 필요
+
                 s3.putObject(request);
             }
 
