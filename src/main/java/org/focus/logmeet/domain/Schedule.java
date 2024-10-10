@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.focus.logmeet.domain.util.BaseTimeEntity;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @Setter
@@ -16,14 +18,12 @@ public class Schedule extends BaseTimeEntity {
     @Column(name = "schedule_id")
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User user;
-
     @JsonBackReference
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id")
     private Project project;
+
+    private LocalDateTime scheduleDate;
 
     @Column(length = 500)
     private String content;
