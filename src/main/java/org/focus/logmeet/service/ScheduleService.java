@@ -1,4 +1,4 @@
 package org.focus.logmeet.service;
 
-public class CalendarService {
+public class ScheduleService {
 }
