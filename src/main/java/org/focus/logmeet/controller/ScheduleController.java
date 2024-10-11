@@ -6,6 +6,7 @@ import org.focus.logmeet.common.response.BaseExceptionResponseStatus;
 import org.focus.logmeet.common.response.BaseResponse;
 import org.focus.logmeet.controller.dto.schedule.ScheduleCreateRequest;
 import org.focus.logmeet.controller.dto.schedule.ScheduleCreateResponse;
+import org.focus.logmeet.controller.dto.schedule.ScheduleInfoResult;
 import org.focus.logmeet.service.ScheduleService;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,6 +23,13 @@ public class ScheduleController {
         log.info("스케줄 생성 요청: {}", request.getScheduleContent());
         ScheduleCreateResponse response = scheduleService.createSchedule(request);
         return new BaseResponse<>(response);
+    }
+
+    @GetMapping("/{scheduleId}")
+    public BaseResponse<ScheduleInfoResult> getSchedule(@PathVariable Long scheduleId) {
+        log.info("스케줄 정보 요청: scheduleId={}", scheduleId);
+        ScheduleInfoResult result = scheduleService.getSchedule(scheduleId);
+        return new BaseResponse<>(result);
     }
 
     @DeleteMapping("/{scheduleId}")

@@ -3,19 +3,16 @@ package org.focus.logmeet.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.focus.logmeet.common.exception.BaseException;
-import org.focus.logmeet.common.response.BaseExceptionResponseStatus;
 import org.focus.logmeet.controller.dto.schedule.ScheduleCreateRequest;
 import org.focus.logmeet.controller.dto.schedule.ScheduleCreateResponse;
+import org.focus.logmeet.controller.dto.schedule.ScheduleInfoResult;
 import org.focus.logmeet.domain.Project;
 import org.focus.logmeet.domain.Schedule;
 import org.focus.logmeet.domain.User;
 import org.focus.logmeet.domain.UserProject;
-import org.focus.logmeet.domain.enums.Role;
-import org.focus.logmeet.domain.enums.Status;
 import org.focus.logmeet.repository.ProjectRepository;
 import org.focus.logmeet.repository.ScheduleRepository;
 import org.focus.logmeet.repository.UserProjectRepository;
-import org.focus.logmeet.repository.UserRepository;
 import org.focus.logmeet.security.annotation.CurrentUser;
 import org.focus.logmeet.security.aspect.CurrentUserHolder;
 import org.springframework.stereotype.Service;
@@ -53,6 +50,22 @@ public class ScheduleService {
         return new ScheduleCreateResponse(schedule.getId());
     }
 
+    @CurrentUser
+    public ScheduleInfoResult getSchedule(Long scheduleId) {
+        log.info("스케줄 정보 조회 시도: scheduleId={}", scheduleId);
+        Schedule schedule = scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new BaseException(SCHEDULE_NOT_FOUND));
+        Long projectId = schedule.getProject().getId();
+        UserProject userProject = validateUserAndProject(projectId);
+        return new ScheduleInfoResult(
+                projectId,
+                schedule.getProject().getName(),
+                schedule.getContent(),
+                schedule.getScheduleDate(),
+                userProject.getColor()
+        );
+    }
+
     @Transactional
     @CurrentUser
     public void deleteSchedule(Long scheduleId) {
@@ -70,7 +83,7 @@ public class ScheduleService {
         scheduleRepository.delete(schedule);
     }
 
-    private UserProject validateUserAndProject(Long projectId) {
+    private UserProject validateUserAndProject(Long projectId) { //TODO: 코드 중복 없애기
         User currentUser = CurrentUserHolder.get();
 
         if (currentUser == null) {
