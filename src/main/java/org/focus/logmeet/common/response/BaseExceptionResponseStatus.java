@@ -62,7 +62,10 @@ public enum BaseExceptionResponseStatus implements ResponseStatus {
     // S3 오류
     S3_CLIENT_CREATION_ERROR(false, 7000, "S3 클라이언트 생성 중 오류가 발생했습니다."),
     S3_FILE_UPLOAD_ERROR(false, 7001, "S3에 파일 업로드 중 오류가 발생했습니다."),
-    S3_FILE_DECODING_ERROR(false, 7002, "파일 디코딩 중 오류가 발생했습니다.");
+    S3_FILE_DECODING_ERROR(false, 7002, "파일 디코딩 중 오류가 발생했습니다."),
+
+    // Schedule 오류
+    SCHEDULE_NOT_FOUND(false, 8000, "존재하지 않는 스케줄입니다.");
 
 
 
