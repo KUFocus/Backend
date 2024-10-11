@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ScheduleListOfProjectResult {
+public class ScheduleListResult {
     private Long scheduleId;
     private String projectName;
     private String scheduleContent;
