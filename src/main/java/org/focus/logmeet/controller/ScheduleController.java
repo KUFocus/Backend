@@ -7,6 +7,7 @@ import org.focus.logmeet.common.response.BaseResponse;
 import org.focus.logmeet.controller.dto.schedule.ScheduleCreateRequest;
 import org.focus.logmeet.controller.dto.schedule.ScheduleCreateResponse;
 import org.focus.logmeet.controller.dto.schedule.ScheduleInfoResult;
+import org.focus.logmeet.controller.dto.schedule.ScheduleUpdateRequest;
 import org.focus.logmeet.service.ScheduleService;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,6 +24,15 @@ public class ScheduleController {
         log.info("스케줄 생성 요청: {}", request.getScheduleContent());
         ScheduleCreateResponse response = scheduleService.createSchedule(request);
         return new BaseResponse<>(response);
+    }
+
+    @PutMapping("/{scheduleId}")
+    public BaseResponse<Void> updateSchedule(
+            @PathVariable Long scheduleId,
+            @RequestBody ScheduleUpdateRequest request) {
+        log.info("스케줄 수정 요청: scheduleId={}", scheduleId);
+        scheduleService.updateSchedule(scheduleId, request);
+        return new BaseResponse<>(SUCCESS);
     }
 
     @GetMapping("/{scheduleId}")
