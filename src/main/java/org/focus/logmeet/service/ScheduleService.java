@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.USER_NOT_IN_PROJECT;
@@ -89,19 +88,47 @@ public class ScheduleService {
 
 
     @CurrentUser
-    public List<ScheduleListOfProjectResult> getScheduleOfProject(Long projectId) {
+    public List<ScheduleListResult> getScheduleOfProject(Long projectId) {
         log.info("프로젝트의 스케줄 리스트 조회 시도: projectId={}", projectId);
         UserProject userProject = validateUserAndProject(projectId);
         List<Schedule> schedules = scheduleRepository.findSchedulesByProjectId(projectId);
 
         return schedules.stream()
-                .map(schedule -> new ScheduleListOfProjectResult(
+                .map(schedule -> new ScheduleListResult(
                         schedule.getId(),
                         schedule.getProject().getName(),
                         schedule.getContent(),
                         schedule.getScheduleDate(),
                         userProject.getColor()
                 ))
+                .toList();
+    }
+
+    @CurrentUser
+    public List<ScheduleListResult> getScheduleOfUser() {
+        User currentUser = CurrentUserHolder.get();
+
+        if (currentUser == null) {
+            throw new BaseException(USER_NOT_AUTHENTICATED);
+        }
+        log.info("유저의 스케줄 리스트 조회 시도: userId={}", currentUser.getId());
+
+        List<Schedule> schedules = scheduleRepository.findSchedulesByUserId(currentUser.getId());
+        return schedules.stream()
+                .map(schedule -> {
+                    UserProject userProject = schedule.getProject().getUserProjects().stream()
+                            .filter(up -> up.getUser().getId().equals(currentUser.getId()))
+                            .findFirst()
+                            .orElseThrow(() -> new BaseException(USER_NOT_IN_PROJECT));
+
+                    return new ScheduleListResult(
+                            schedule.getId(),
+                            schedule.getProject().getName(),
+                            schedule.getContent(),
+                            schedule.getScheduleDate(),
+                            userProject.getColor()
+                    );
+                })
                 .toList();
     }
 

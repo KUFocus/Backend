@@ -2,7 +2,6 @@ package org.focus.logmeet.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.focus.logmeet.common.response.BaseExceptionResponseStatus;
 import org.focus.logmeet.common.response.BaseResponse;
 import org.focus.logmeet.controller.dto.schedule.*;
 import org.focus.logmeet.service.ScheduleService;
@@ -42,9 +41,16 @@ public class ScheduleController {
     }
 
     @GetMapping("/{projectId}/schedule-list")
-    public BaseResponse<List<ScheduleListOfProjectResult>> getScheduleOfProject(@PathVariable Long projectId) {
+    public BaseResponse<List<ScheduleListResult>> getScheduleOfProject(@PathVariable Long projectId) {
         log.info("프로젝트의 스케줄 리스트 요청: projectId={}", projectId);
-        List<ScheduleListOfProjectResult> results = scheduleService.getScheduleOfProject(projectId);
+        List<ScheduleListResult> results = scheduleService.getScheduleOfProject(projectId);
+        return new BaseResponse<>(results);
+    }
+
+    @GetMapping("/users/schedule-list")
+    public BaseResponse<List<ScheduleListResult>> getScheduleOfUser() {
+        log.info("유저의 스케줄 리스트 요청");
+        List<ScheduleListResult> results = scheduleService.getScheduleOfUser();
         return new BaseResponse<>(results);
     }
 
