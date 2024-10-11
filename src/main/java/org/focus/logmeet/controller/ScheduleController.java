@@ -4,12 +4,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.focus.logmeet.common.response.BaseExceptionResponseStatus;
 import org.focus.logmeet.common.response.BaseResponse;
-import org.focus.logmeet.controller.dto.schedule.ScheduleCreateRequest;
-import org.focus.logmeet.controller.dto.schedule.ScheduleCreateResponse;
-import org.focus.logmeet.controller.dto.schedule.ScheduleInfoResult;
-import org.focus.logmeet.controller.dto.schedule.ScheduleUpdateRequest;
+import org.focus.logmeet.controller.dto.schedule.*;
 import org.focus.logmeet.service.ScheduleService;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.SUCCESS;
 
@@ -40,6 +39,13 @@ public class ScheduleController {
         log.info("스케줄 정보 요청: scheduleId={}", scheduleId);
         ScheduleInfoResult result = scheduleService.getSchedule(scheduleId);
         return new BaseResponse<>(result);
+    }
+
+    @GetMapping("/{projectId}/schedule-list")
+    public BaseResponse<List<ScheduleListOfProjectResult>> getScheduleOfProject(@PathVariable Long projectId) {
+        log.info("프로젝트의 스케줄 리스트 요청: projectId={}", projectId);
+        List<ScheduleListOfProjectResult> results = scheduleService.getScheduleOfProject(projectId);
+        return new BaseResponse<>(results);
     }
 
     @DeleteMapping("/{scheduleId}")

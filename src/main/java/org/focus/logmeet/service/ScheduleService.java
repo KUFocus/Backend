@@ -3,10 +3,7 @@ package org.focus.logmeet.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.focus.logmeet.common.exception.BaseException;
-import org.focus.logmeet.controller.dto.schedule.ScheduleCreateRequest;
-import org.focus.logmeet.controller.dto.schedule.ScheduleCreateResponse;
-import org.focus.logmeet.controller.dto.schedule.ScheduleInfoResult;
-import org.focus.logmeet.controller.dto.schedule.ScheduleUpdateRequest;
+import org.focus.logmeet.controller.dto.schedule.*;
 import org.focus.logmeet.domain.Project;
 import org.focus.logmeet.domain.Schedule;
 import org.focus.logmeet.domain.User;
@@ -19,6 +16,7 @@ import org.focus.logmeet.security.aspect.CurrentUserHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
@@ -87,6 +85,24 @@ public class ScheduleService {
                 schedule.getScheduleDate(),
                 userProject.getColor()
         );
+    }
+
+
+    @CurrentUser
+    public List<ScheduleListOfProjectResult> getScheduleOfProject(Long projectId) {
+        log.info("프로젝트의 스케줄 리스트 조회 시도: projectId={}", projectId);
+        UserProject userProject = validateUserAndProject(projectId);
+        List<Schedule> schedules = scheduleRepository.findSchedulesByProjectId(projectId);
+
+        return schedules.stream()
+                .map(schedule -> new ScheduleListOfProjectResult(
+                        schedule.getId(),
+                        schedule.getProject().getName(),
+                        schedule.getContent(),
+                        schedule.getScheduleDate(),
+                        userProject.getColor()
+                ))
+                .toList();
     }
 
     @Transactional
