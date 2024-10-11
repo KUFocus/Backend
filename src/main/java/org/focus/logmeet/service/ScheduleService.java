@@ -16,6 +16,7 @@ import org.focus.logmeet.security.aspect.CurrentUserHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
@@ -105,6 +106,23 @@ public class ScheduleService {
     }
 
     @CurrentUser
+    public List<ScheduleListResult> getScheduleOfProjectAt(Long projectId, LocalDate date) {
+        log.info("프로젝트의 특정 날짜의 스케줄 리스트 조회 시도: projectId={}, date={}", projectId, date);
+        UserProject userProject = validateUserAndProject(projectId);
+        List<Schedule> schedules = scheduleRepository.findByProjectIdAndDate(projectId, date);
+
+        return schedules.stream()
+                .map(schedule -> new ScheduleListResult(
+                        schedule.getId(),
+                        schedule.getProject().getName(),
+                        schedule.getContent(),
+                        schedule.getScheduleDate(),
+                        userProject.getColor()
+                ))
+                .toList();
+    }
+
+    @CurrentUser
     public List<ScheduleListResult> getScheduleOfUser() {
         User currentUser = CurrentUserHolder.get();
 
@@ -114,23 +132,21 @@ public class ScheduleService {
         log.info("유저의 스케줄 리스트 조회 시도: userId={}", currentUser.getId());
 
         List<Schedule> schedules = scheduleRepository.findSchedulesByUserId(currentUser.getId());
-        return schedules.stream()
-                .map(schedule -> {
-                    UserProject userProject = schedule.getProject().getUserProjects().stream()
-                            .filter(up -> up.getUser().getId().equals(currentUser.getId()))
-                            .findFirst()
-                            .orElseThrow(() -> new BaseException(USER_NOT_IN_PROJECT));
-
-                    return new ScheduleListResult(
-                            schedule.getId(),
-                            schedule.getProject().getName(),
-                            schedule.getContent(),
-                            schedule.getScheduleDate(),
-                            userProject.getColor()
-                    );
-                })
-                .toList();
+        return getScheduleListResults(currentUser, schedules);
     }
+
+    @CurrentUser
+    public List<ScheduleListResult> getScheduleOfUserAt(LocalDate date) {
+        User currentUser = CurrentUserHolder.get();
+
+        if (currentUser == null) {
+            throw new BaseException(USER_NOT_AUTHENTICATED);
+        }
+        log.info("유저의 특정 날짜의 리스트 조회 시도: userId={}, date={}", currentUser.getId(), date);
+        List<Schedule> schedules = scheduleRepository.findByUserIdAndDate(currentUser.getId(), date);
+        return getScheduleListResults(currentUser, schedules);
+    }
+
 
     @Transactional
     @CurrentUser
@@ -161,5 +177,24 @@ public class ScheduleService {
 
         return userProjectRepository.findByUserAndProject(currentUser, project)
                 .orElseThrow(() -> new BaseException(USER_NOT_IN_PROJECT));
+    }
+
+    private List<ScheduleListResult> getScheduleListResults(User currentUser, List<Schedule> schedules) {
+        return schedules.stream()
+                .map(schedule -> {
+                    UserProject userProject = schedule.getProject().getUserProjects().stream()
+                            .filter(up -> up.getUser().getId().equals(currentUser.getId()))
+                            .findFirst()
+                            .orElseThrow(() -> new BaseException(USER_NOT_IN_PROJECT));
+
+                    return new ScheduleListResult(
+                            schedule.getId(),
+                            schedule.getProject().getName(),
+                            schedule.getContent(),
+                            schedule.getScheduleDate(),
+                            userProject.getColor()
+                    );
+                })
+                .toList();
     }
 }

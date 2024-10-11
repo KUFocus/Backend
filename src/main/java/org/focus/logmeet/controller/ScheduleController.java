@@ -7,6 +7,8 @@ import org.focus.logmeet.controller.dto.schedule.*;
 import org.focus.logmeet.service.ScheduleService;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.SUCCESS;
@@ -47,10 +49,24 @@ public class ScheduleController {
         return new BaseResponse<>(results);
     }
 
+    @GetMapping("/{projectId}/schedules")
+    public BaseResponse<List<ScheduleListResult>> getScheduleOfProjectAt(@PathVariable Long projectId, @RequestParam("date") LocalDate date) {
+        log.info("프로젝트의 특정 날짜의 스케줄 리스트 요청: projectId={}, date={}", projectId, date);
+        List<ScheduleListResult> results = scheduleService.getScheduleOfProjectAt(projectId, date);
+        return new BaseResponse<>(results);
+    }
+
     @GetMapping("/users/schedule-list")
     public BaseResponse<List<ScheduleListResult>> getScheduleOfUser() {
         log.info("유저의 스케줄 리스트 요청");
         List<ScheduleListResult> results = scheduleService.getScheduleOfUser();
+        return new BaseResponse<>(results);
+    }
+
+    @GetMapping("/users/schedules")
+    public BaseResponse<List<ScheduleListResult>> getScheduleOfUserAt(@RequestParam("date") LocalDate date) {
+        log.info("유저의 특정 날짜의 스케줄 리스트 요청");
+        List<ScheduleListResult> results = scheduleService.getScheduleOfUserAt(date);
         return new BaseResponse<>(results);
     }
 
