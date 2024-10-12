@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.focus.logmeet.common.exception.BaseException;
 import org.focus.logmeet.controller.dto.minutes.*;
+import org.focus.logmeet.controller.dto.schedule.ScheduleDto;
 import org.focus.logmeet.domain.*;
 import org.focus.logmeet.domain.enums.MinutesType;
 import org.focus.logmeet.domain.enums.ProjectColor;
@@ -199,27 +200,29 @@ public class MinutesService {
                 MinutesSummarizeResult responseBody = response.getBody();
 
                 if (responseBody != null && responseBody.getSummarizedText() != null) {
-                    log.info("요약 API 호출 성공: 요약된 텍스트={}, 일정 정보={}", responseBody.getSummarizedText(), responseBody.getExtractedScheduleDate());
+                    log.info("요약 API 호출 성공: 요약된 텍스트={}", responseBody.getSummarizedText());
                     minutes.setSummary(responseBody.getSummarizedText());
+                    minutesRepository.save(minutes);
 
-                    if (responseBody.getExtractedScheduleDate() != null && responseBody.getExtractedScheduleContent() != null) {
-                        try {
-                            // LocalDateTime 변환 시 예외 처리
-                            LocalDateTime scheduleDate = LocalDateTime.parse(responseBody.getExtractedScheduleDate());
+                    List<ScheduleDto> schedules = responseBody.getSchedules();
+                    if (schedules != null && !schedules.isEmpty()) {
+                        for (ScheduleDto scheduleDto : schedules) {
+                            try {
+                                LocalDateTime scheduleDate = LocalDateTime.parse(scheduleDto.getExtractedScheduleDate());
 
-                            Schedule schedule = Schedule.builder()
-                                    .project(minutes.getProject())
-                                    .scheduleDate(scheduleDate)
-                                    .content(responseBody.getExtractedScheduleContent())
-                                    .status(ACTIVE)
-                                    .build();
-                            scheduleRepository.save(schedule);
-                        } catch (DateTimeParseException e) {
-                            log.error("잘못된 날짜 형식: {}", responseBody.getExtractedScheduleDate(), e);
-                            throw new BaseException(SCHEDULE_DATE_FORMAT_INVALID);
+                                Schedule schedule = Schedule.builder()
+                                        .project(minutes.getProject())
+                                        .scheduleDate(scheduleDate)
+                                        .content(scheduleDto.getExtractedScheduleContent())
+                                        .status(ACTIVE)
+                                        .build();
+                                scheduleRepository.save(schedule);
+                            } catch (DateTimeParseException e) {
+                                log.error("잘못된 날짜 형식: {}", scheduleDto.getExtractedScheduleDate(), e);
+                                throw new BaseException(SCHEDULE_DATE_FORMAT_INVALID);
+                            }
                         }
                     }
-                    minutesRepository.save(minutes);
                     return responseBody;
                 } else {
                     log.error("요약 API 응답에 'summary'가 없음: {}", responseBody);
