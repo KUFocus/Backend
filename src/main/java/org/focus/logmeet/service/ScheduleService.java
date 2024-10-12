@@ -56,8 +56,6 @@ public class ScheduleService {
         Schedule schedule = scheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new BaseException(SCHEDULE_NOT_FOUND));
         UserProject leaderProject = validateUserAndProject(schedule.getProject().getId());
-        Project project = projectRepository.findById(request.getProjectId())
-                .orElseThrow(() -> new BaseException(PROJECT_NOT_FOUND));
         if (!leaderProject.getRole().equals(LEADER)) {
             log.info("권한이 없는 수정 시도: scheduleId={}, userId={}", scheduleId, leaderProject.getUser().getId());
             throw new BaseException(USER_NOT_LEADER);
@@ -65,7 +63,6 @@ public class ScheduleService {
 
         schedule.setContent(request.getScheduleContent());
         schedule.setScheduleDate(request.getScheduleDate());
-        schedule.setProject(project);
 
         scheduleRepository.save(schedule);
         log.info("스케줄 수정 성공: scheduleId={}", scheduleId);

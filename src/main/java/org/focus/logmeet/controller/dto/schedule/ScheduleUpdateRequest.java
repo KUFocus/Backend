@@ -12,5 +12,4 @@ import java.time.LocalDateTime;
 public class ScheduleUpdateRequest {
     private String scheduleContent;
     private LocalDateTime scheduleDate;
-    private Long projectId;
 }
