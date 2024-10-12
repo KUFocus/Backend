@@ -9,11 +9,11 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
-    @Query("SELECT s FROM Schedule s JOIN FETCH s.project p WHERE p.id = :projectId")
-    List<Schedule> findSchedulesByProjectId(@Param("projectId") Long projectId);
+    @Query("SELECT s FROM Schedule s JOIN FETCH s.project p WHERE p.id = :projectId AND FUNCTION('YEAR', s.scheduleDate) = :year AND FUNCTION('MONTH', s.scheduleDate) = :month")
+    List<Schedule> findSchedulesByProjectIdAndMonth(@Param("projectId") Long projectId, @Param("year") int year, @Param("month") int month);
 
-    @Query("SELECT s FROM Schedule s WHERE s.project.id IN (SELECT up.project.id FROM UserProject up WHERE up.user.id = :userId)")
-    List<Schedule> findSchedulesByUserId(@Param("userId") Long userId);
+    @Query("SELECT s FROM Schedule s WHERE s.project.id IN (SELECT up.project.id FROM UserProject up WHERE up.user.id = :userId) AND FUNCTION('YEAR', s.scheduleDate) = :year AND FUNCTION('MONTH', s.scheduleDate) = :month")
+    List<Schedule> findSchedulesByUserIdAndMonth(@Param("userId") Long userId, @Param("year") int year, @Param("month") int month);
 
     // 프로젝트 캘린더 일정 조회
     @Query("SELECT s FROM Schedule s WHERE s.project.id = :projectId AND DATE(s.scheduleDate) = :date")

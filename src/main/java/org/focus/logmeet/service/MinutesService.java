@@ -4,14 +4,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.focus.logmeet.common.exception.BaseException;
 import org.focus.logmeet.controller.dto.minutes.*;
-import org.focus.logmeet.domain.Minutes;
-import org.focus.logmeet.domain.Project;
-import org.focus.logmeet.domain.User;
-import org.focus.logmeet.domain.UserProject;
+import org.focus.logmeet.controller.dto.schedule.ScheduleDto;
+import org.focus.logmeet.domain.*;
 import org.focus.logmeet.domain.enums.MinutesType;
 import org.focus.logmeet.domain.enums.ProjectColor;
 import org.focus.logmeet.repository.MinutesRepository;
 import org.focus.logmeet.repository.ProjectRepository;
+import org.focus.logmeet.repository.ScheduleRepository;
 import org.focus.logmeet.repository.UserProjectRepository;
 import org.focus.logmeet.security.annotation.CurrentUser;
 import org.focus.logmeet.security.aspect.CurrentUserHolder;
@@ -33,6 +32,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -51,6 +51,7 @@ public class MinutesService {
     private final MinutesRepository minutesRepository;
     private final ProjectRepository projectRepository;
     private final UserProjectRepository userProjectRepository;
+    private final ScheduleRepository scheduleRepository;
     private final RestTemplate restTemplate;
 
     @Value("${flask.server.url}")
@@ -165,6 +166,7 @@ public class MinutesService {
     }
 
     // TODO: GPT 요약 API 호출 메서드 추가 보완 필요
+    @Transactional
     public MinutesSummarizeResult summarizeText(Long minutesId) {
         log.info("텍스트 요약 시도: minutesId={}", minutesId);
 
@@ -198,9 +200,29 @@ public class MinutesService {
                 MinutesSummarizeResult responseBody = response.getBody();
 
                 if (responseBody != null && responseBody.getSummarizedText() != null) {
-                    log.info("요약 API 호출 성공: 요약된 텍스트={}, 일정 정보={}", responseBody.getSummarizedText(), responseBody.getExtractedSchedule());
+                    log.info("요약 API 호출 성공: 요약된 텍스트={}", responseBody.getSummarizedText());
                     minutes.setSummary(responseBody.getSummarizedText());
                     minutesRepository.save(minutes);
+
+                    List<ScheduleDto> schedules = responseBody.getSchedules();
+                    if (schedules != null && !schedules.isEmpty()) {
+                        for (ScheduleDto scheduleDto : schedules) {
+                            try {
+                                LocalDateTime scheduleDate = LocalDateTime.parse(scheduleDto.getExtractedScheduleDate());
+
+                                Schedule schedule = Schedule.builder()
+                                        .project(minutes.getProject())
+                                        .scheduleDate(scheduleDate)
+                                        .content(scheduleDto.getExtractedScheduleContent())
+                                        .status(ACTIVE)
+                                        .build();
+                                scheduleRepository.save(schedule);
+                            } catch (DateTimeParseException e) {
+                                log.error("잘못된 날짜 형식: {}", scheduleDto.getExtractedScheduleDate(), e);
+                                throw new BaseException(SCHEDULE_DATE_FORMAT_INVALID);
+                            }
+                        }
+                    }
                     return responseBody;
                 } else {
                     log.error("요약 API 응답에 'summary'가 없음: {}", responseBody);

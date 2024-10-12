@@ -65,7 +65,8 @@ public enum BaseExceptionResponseStatus implements ResponseStatus {
     S3_FILE_DECODING_ERROR(false, 7002, "파일 디코딩 중 오류가 발생했습니다."),
 
     // Schedule 오류
-    SCHEDULE_NOT_FOUND(false, 8000, "존재하지 않는 스케줄입니다.");
+    SCHEDULE_NOT_FOUND(false, 8000, "존재하지 않는 스케줄입니다."),
+    SCHEDULE_DATE_FORMAT_INVALID(false, 8001, "잘못된 날짜 형식입니다.");
 
 
 

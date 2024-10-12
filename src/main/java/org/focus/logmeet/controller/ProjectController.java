@@ -1,6 +1,7 @@
 package org.focus.logmeet.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -49,13 +50,15 @@ public class ProjectController {
                     content = @Content(schema = @Schema(implementation = ProjectInfoResult.class)))
     })
     @GetMapping("/{projectId}")
-    public BaseResponse<ProjectInfoResult> getProject(@PathVariable Long projectId) {
+    public BaseResponse<ProjectInfoResult> getProject(
+            @Parameter(name = "projectId", description = "조회할 프로젝트의 고유 ID", required = true)
+            @PathVariable Long projectId) {
         log.info("프로젝트 정보 요청: projectId={}", projectId);
         ProjectInfoResult result = projectService.getProject(projectId);
         return new BaseResponse<>(result);
     }
 
-    @Operation(summary = "모든 프로젝트 목록 조회", description = "현재 사용자의 모든 프로젝트 목록을 조회합니다.")
+    @Operation(summary = "현재 사용자의 프로젝트 목록 조회", description = "현재 사용자의 모든 프로젝트 목록을 조회합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "프로젝트 목록 반환",
                     content = @Content(schema = @Schema(implementation = ProjectListResult.class)))
@@ -85,6 +88,7 @@ public class ProjectController {
     })
     @PutMapping("/{projectId}")
     public BaseResponse<Void> updateProject(
+            @Parameter(name = "projectId", description = "수정할 프로젝트의 고유 ID", required = true)
             @PathVariable Long projectId,
             @RequestBody ProjectUpdateRequest request) {
         log.info("프로젝트 수정 요청: projectId={}", projectId);
@@ -98,7 +102,9 @@ public class ProjectController {
                     content = @Content(schema = @Schema(implementation = ProjectBookmarkResult.class)))
     })
     @PutMapping("/{projectId}/bookmark")
-    public BaseResponse<ProjectBookmarkResult> bookmarkProjectToggle(@PathVariable Long projectId) {
+    public BaseResponse<ProjectBookmarkResult> bookmarkProjectToggle(
+            @Parameter(name = "projectId", description = "즐겨찾기를 토글할 프로젝트의 고유 ID", required = true)
+            @PathVariable Long projectId) {
         log.info("프로젝트 즐겨찾기 토글 요청: projectId={}", projectId);
         ProjectBookmarkResult result = projectService.bookmarkProjectToggle(projectId);
         return new BaseResponse<>(result);
@@ -109,7 +115,11 @@ public class ProjectController {
             @ApiResponse(responseCode = "200", description = "참가자 추방 성공")
     })
     @DeleteMapping("/expel")
-    public BaseResponse<Void> expelMember(@RequestParam Long projectId, @RequestParam Long userId) {
+    public BaseResponse<Void> expelMember(
+            @Parameter(name = "projectId", description = "추방할 참가자의 프로젝트 ID", required = true)
+            @RequestParam Long projectId,
+            @Parameter(name = "userId", description = "추방할 유저의 고유 ID", required = true)
+            @RequestParam Long userId) {
         log.info("참가자 추방 요청: projectId={}, userId={}", projectId, userId);
         projectService.expelMember(projectId, userId);
         return new BaseResponse<>(SUCCESS);
@@ -120,7 +130,9 @@ public class ProjectController {
             @ApiResponse(responseCode = "200", description = "프로젝트 삭제 성공")
     })
     @DeleteMapping("/{projectId}")
-    public BaseResponse<Void> deleteProject(@PathVariable Long projectId) {
+    public BaseResponse<Void> deleteProject(
+            @Parameter(name = "projectId", description = "삭제할 프로젝트의 고유 ID", required = true)
+            @PathVariable Long projectId) {
         log.info("프로젝트 삭제 요청: projectId={}", projectId);
         projectService.deleteProject(projectId);
         return new BaseResponse<>(SUCCESS);
@@ -132,7 +144,10 @@ public class ProjectController {
                     content = @Content(schema = @Schema(implementation = ProjectLeaderDelegationResponse.class)))
     })
     @PutMapping("/{projectId}/leader")
-    public BaseResponse<ProjectLeaderDelegationResponse> delegateLeader(@PathVariable Long projectId, @RequestBody ProjectLeaderDelegationRequest request) {
+    public BaseResponse<ProjectLeaderDelegationResponse> delegateLeader(
+            @Parameter(name = "projectId", description = "리더를 임명할 프로젝트의 고유 ID", required = true)
+            @PathVariable Long projectId,
+            @RequestBody ProjectLeaderDelegationRequest request) {
         log.info("프로젝트 리더 임명 요청: projectId={}", projectId);
         ProjectLeaderDelegationResponse result = projectService.delegateLeader(projectId, request.getNewLeaderId());
         return new BaseResponse<>(result);
@@ -143,7 +158,9 @@ public class ProjectController {
             @ApiResponse(responseCode = "200", description = "프로젝트 나가기 성공")
     })
     @DeleteMapping("/{projectId}/leave")
-    public BaseResponse<Void> leaveProject(@PathVariable Long projectId) {
+    public BaseResponse<Void> leaveProject(
+            @Parameter(name = "projectId", description = "나가려는 프로젝트의 고유 ID", required = true)
+            @PathVariable Long projectId) {
         log.info("프로젝트 나가기 요청: projectId={}", projectId);
         projectService.leaveProject(projectId);
         return new BaseResponse<>(SUCCESS);

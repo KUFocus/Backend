@@ -56,8 +56,6 @@ public class ScheduleService {
         Schedule schedule = scheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new BaseException(SCHEDULE_NOT_FOUND));
         UserProject leaderProject = validateUserAndProject(schedule.getProject().getId());
-        Project project = projectRepository.findById(request.getProjectId())
-                .orElseThrow(() -> new BaseException(PROJECT_NOT_FOUND));
         if (!leaderProject.getRole().equals(LEADER)) {
             log.info("권한이 없는 수정 시도: scheduleId={}, userId={}", scheduleId, leaderProject.getUser().getId());
             throw new BaseException(USER_NOT_LEADER);
@@ -65,7 +63,6 @@ public class ScheduleService {
 
         schedule.setContent(request.getScheduleContent());
         schedule.setScheduleDate(request.getScheduleDate());
-        schedule.setProject(project);
 
         scheduleRepository.save(schedule);
         log.info("스케줄 수정 성공: scheduleId={}", scheduleId);
@@ -89,10 +86,12 @@ public class ScheduleService {
 
 
     @CurrentUser
-    public List<ScheduleListResult> getScheduleOfProject(Long projectId) {
+    public List<ScheduleListResult> getScheduleOfProject(Long projectId, LocalDate yearMonth) {
         log.info("프로젝트의 스케줄 리스트 조회 시도: projectId={}", projectId);
         UserProject userProject = validateUserAndProject(projectId);
-        List<Schedule> schedules = scheduleRepository.findSchedulesByProjectId(projectId);
+        int year = yearMonth.getYear();
+        int month = yearMonth.getMonthValue();
+        List<Schedule> schedules = scheduleRepository.findSchedulesByProjectIdAndMonth(projectId, year, month);
 
         return schedules.stream()
                 .map(schedule -> new ScheduleListResult(
@@ -123,7 +122,7 @@ public class ScheduleService {
     }
 
     @CurrentUser
-    public List<ScheduleListResult> getScheduleOfUser() {
+    public List<ScheduleListResult> getScheduleOfUser(LocalDate yearMonth) {
         User currentUser = CurrentUserHolder.get();
 
         if (currentUser == null) {
@@ -131,7 +130,10 @@ public class ScheduleService {
         }
         log.info("유저의 스케줄 리스트 조회 시도: userId={}", currentUser.getId());
 
-        List<Schedule> schedules = scheduleRepository.findSchedulesByUserId(currentUser.getId());
+        int year = yearMonth.getYear();
+        int month = yearMonth.getMonthValue();
+        List<Schedule> schedules = scheduleRepository.findSchedulesByProjectIdAndMonth(currentUser.getId(), year, month);
+
         return getScheduleListResults(currentUser, schedules);
     }
 
