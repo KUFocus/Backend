@@ -56,7 +56,7 @@ public class ScheduleController {
     }
 
     @GetMapping("/users/schedule-list")
-    public BaseResponse<List<ScheduleListResult>> getScheduleOfUser(@RequestParam("date") LocalDate yearMonth) {
+    public BaseResponse<List<ScheduleListResult>> getScheduleOfUser(@RequestParam("yearMonth") LocalDate yearMonth) {
         log.info("유저의 월별 스케줄 리스트 요청: yearMonth={}", yearMonth);
         List<ScheduleListResult> results = scheduleService.getScheduleOfUser(yearMonth);
         return new BaseResponse<>(results);
