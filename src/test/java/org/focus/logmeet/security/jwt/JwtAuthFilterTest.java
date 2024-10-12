@@ -3,6 +3,7 @@ package org.focus.logmeet.security.jwt;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import org.focus.logmeet.common.exception.BaseException;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,6 +45,12 @@ class JwtAuthFilterTest {
         request = new MockHttpServletRequest();
         response = new MockHttpServletResponse();
         filterChain = mock(FilterChain.class);
+        SecurityContextHolder.clearContext();
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     @Test

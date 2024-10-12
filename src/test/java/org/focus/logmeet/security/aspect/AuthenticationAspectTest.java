@@ -5,6 +5,7 @@ import org.focus.logmeet.domain.User;
 import org.focus.logmeet.domain.enums.Status;
 import org.focus.logmeet.repository.UserRepository;
 import org.focus.logmeet.security.user.UserDetailsImpl;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,7 +17,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import java.lang.reflect.Constructor;
 import java.util.Optional;
 
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.USER_NOT_AUTHENTICATED;
@@ -42,6 +42,11 @@ class AuthenticationAspectTest {
     @BeforeEach
     void setUp() {
         SecurityContextHolder.setContext(securityContext);
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     @Test
@@ -97,6 +102,22 @@ class AuthenticationAspectTest {
 
         verify(userRepository, times(1)).findById(userId);
     }
+
+    @Test
+    @DisplayName("CurrentUserHolder가 clear 되어야 함")
+    void testClearCurrentUser() {
+        //given
+        Long userId = 1L;
+        User user = createUser(userId);
+        CurrentUserHolder.set(user);
+
+        //when
+        authenticationAspect.clearCurrentUser();
+
+        //then
+        assertThat(CurrentUserHolder.get()).isNull();
+    }
+
 
     private User createUser(Long userId) {
         return User.builder()
