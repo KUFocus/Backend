@@ -2,6 +2,7 @@ package org.focus.logmeet.security.jwt;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.HttpServletRequest;
 import org.focus.logmeet.common.exception.BaseException;
 import org.focus.logmeet.domain.RefreshToken;
 import org.focus.logmeet.repository.RefreshTokenRepository;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.User;
@@ -33,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -68,6 +71,59 @@ class JwtProviderTest {
     }
 
     @Test
+    @DisplayName("리프레시 토큰 만료 시간이 올바르게 반환됨")
+    void testGetRefreshTime() {
+        //when
+        long refreshTime = jwtProvider.getRefreshTime();
+
+        //then
+        assertThat(refreshTime).isEqualTo(7 * 24 * 60 * 60 * 1000L); // 7일의 밀리초 값
+    }
+
+
+    @Test
+    @DisplayName("토큰 타입이 올바르게 추출됨")
+    void testGetTokenType() {
+        //given
+        String email = "test@example.com";
+        String accessToken = jwtProvider.createToken(email, "Access");
+
+        //when
+        String tokenType = jwtProvider.getTokenType(accessToken);
+
+        //then
+        assertThat(tokenType).isEqualTo("Access");
+    }
+
+    @Test
+    @DisplayName("Authorization 헤더가 없을 때 null 반환")
+    void testGetHeaderToken_NoHeader() {
+        //given
+        HttpServletRequest request = new MockHttpServletRequest(); // 빈 요청
+
+        //when
+        String token = jwtProvider.getHeaderToken(request);
+
+        //then
+        assertThat(token).isNull();
+    }
+
+    @Test
+    @DisplayName("Authorization 헤더에서 Bearer 토큰이 올바르게 추출됨")
+    void testGetHeaderToken_WithBearer() {
+        //given
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        String bearerToken = "Bearer validToken";
+        request.addHeader("Authorization", bearerToken);
+
+        //when
+        String token = jwtProvider.getHeaderToken(request);
+
+        //then
+        assertThat(token).isEqualTo("validToken");
+    }
+
+    @Test
     @DisplayName("토큰 생성이 성공적으로 처리됨")
     void testCreateToken() {
         //given
@@ -79,6 +135,21 @@ class JwtProviderTest {
         //then
         assertThat(token).isNotNull();
     }
+
+    @Test
+    @DisplayName("모든 토큰 생성이 성공적으로 처리됨")
+    void testCreateAllToken() {
+        //given
+        String email = "test@example.com";
+
+        //when
+        JwtTokenDto tokens = jwtProvider.createAllToken(email);
+
+        //then
+        assertThat(tokens.getAccessToken()).isNotNull();
+        assertThat(tokens.getRefreshToken()).isNotNull();
+    }
+
 
     @Test
     @DisplayName("토큰 파싱이 성공적으로 처리됨")
@@ -203,7 +274,7 @@ class JwtProviderTest {
     }
 
     @Test
-    @DisplayName("리프레시 토큰 검증 중 예외 발생 시 로그 확인")
+    @DisplayName("리프레시 토큰 검증 중 유효하지 않은 토큰일 때 검증 실패")
     void testRefreshTokenValidationException() {
         //given
         String invalidRefreshToken = "invalidRefreshToken";
@@ -214,6 +285,29 @@ class JwtProviderTest {
         //then
         assertThat(isValid).isFalse();
     }
+
+    @Test
+    @DisplayName("리프레시 토큰 검증 중 토큰이 불일치할 때 검증 실패")
+    void testRefreshTokenValidation_Mismatch() {
+        //given
+        String email = "test@example.com";
+        String storedRefreshToken = "storedRefreshToken";
+        String requestRefreshToken = jwtProvider.createToken(email, "Refresh"); // 올바른 리프레시 토큰을 생성
+
+        // 리프레시 토큰이 저장된 값과 다르게 설정
+        RefreshToken refreshTokenEntity = new RefreshToken();
+        refreshTokenEntity.setUserEmail(email);
+        refreshTokenEntity.setRefreshToken(storedRefreshToken); // 다른 리프레시 토큰 설정
+
+        lenient().when(refreshTokenRepository.findByUserEmail(anyString())).thenReturn(Optional.of(refreshTokenEntity));
+
+        //when
+        boolean isValid = jwtProvider.refreshTokenValidation(requestRefreshToken);
+
+        //then
+        assertThat(isValid).isFalse(); // 불일치하므로 검증 실패
+    }
+
 
     @Test
     @DisplayName("인증 객체 생성이 성공적으로 처리됨")
