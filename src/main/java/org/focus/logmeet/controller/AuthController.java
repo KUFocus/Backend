@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.SUCCESS;
 import static org.focus.logmeet.common.utils.ValidationUtils.validateBindingResult;
 
 @Slf4j
@@ -72,6 +73,6 @@ public class AuthController {
         String token = jwtProvider.getHeaderToken(request);
         log.info("로그아웃 요청: token={}", token);
         authService.logout(token);
-        return new BaseResponse<>(null);
+        return new BaseResponse<>(SUCCESS);
     }
 }
