@@ -9,5 +9,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class MinutesSummarizeResult {
     private String summarizedText;
-    private String extractedSchedule;
+    private String extractedScheduleDate;
+    private String extractedScheduleContent;
 }
