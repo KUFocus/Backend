@@ -68,10 +68,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } catch (BaseException e) {
             log.error("JWT 인증 오류: {}", e.getMessage());
-            throw e;
+            setErrorResponse(response, e.getStatus(), e.getMessage());
         }
         log.debug("JWT 인증 필터 종료: 요청 URI = {}", request.getRequestURI());
     }
+
+    private void setErrorResponse(HttpServletResponse response, BaseExceptionResponseStatus status, String message) throws IOException {
+        response.setStatus(status.getHttpStatusCode());
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        BaseResponse<String> errorResponse = new BaseResponse<>(status, message);
+        response.getWriter().write(new ObjectMapper().writeValueAsString(errorResponse));
+    }
+
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
