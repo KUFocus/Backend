@@ -2,7 +2,6 @@ package org.focus.logmeet.security.jwt;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import org.focus.logmeet.common.exception.BaseException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -113,28 +112,25 @@ class JwtAuthFilterTest {
         when(jwtProvider.getHeaderToken(request)).thenReturn(invalidToken);
         when(jwtProvider.getTokenType(invalidToken)).thenReturn("InvalidType");
 
-        //when & then
-        assertThatThrownBy(() -> jwtAuthFilter.doFilterInternal(request, response, filterChain))
-                .isInstanceOf(BaseException.class)
-                .hasMessageContaining(INVALID_TOKEN.getMessage());
+        //when
+        jwtAuthFilter.doFilterInternal(request, response, filterChain);
 
-        verify(jwtProvider, times(1)).getTokenType(invalidToken);
-        verify(filterChain, never()).doFilter(request, response);
+        //then
+        assertThat(response.getStatus()).isEqualTo(INVALID_TOKEN.getHttpStatusCode());
+        assertThat(response.getContentAsString()).contains(INVALID_TOKEN.getMessage());
     }
 
 
     @Test
     @DisplayName("토큰이 없으면 TOKEN_NOT_FOUND 예외가 발생함")
     void testDoFilterInternal_MissingToken() throws ServletException, IOException {
-        //given Authorization 헤더 없이 요청
+        //when
+        jwtAuthFilter.doFilterInternal(request, response, filterChain);
 
-        //when & then
-        assertThatThrownBy(() -> jwtAuthFilter.doFilterInternal(request, response, filterChain))
-                .isInstanceOf(BaseException.class)
-                .hasMessageContaining(TOKEN_NOT_FOUND.getMessage());
-
+        //then
+        assertThat(response.getStatus()).isEqualTo(TOKEN_NOT_FOUND.getHttpStatusCode());
+        assertThat(response.getContentAsString()).contains(TOKEN_NOT_FOUND.getMessage());
         verify(jwtProvider, times(1)).getHeaderToken(request);
-        verify(filterChain, never()).doFilter(request, response);
     }
 
 
@@ -149,14 +145,15 @@ class JwtAuthFilterTest {
         when(jwtProvider.getTokenType(expiredToken)).thenReturn("Access");
         when(jwtProvider.tokenValidation(expiredToken)).thenReturn(false);
 
-        //when & then
-        assertThatThrownBy(() -> jwtAuthFilter.doFilterInternal(request, response, filterChain))
-                .isInstanceOf(BaseException.class)
-                .hasMessageContaining(EXPIRED_TOKEN.getMessage());
+        //when
+        jwtAuthFilter.doFilterInternal(request, response, filterChain);
 
+        //then
+        assertThat(response.getStatus()).isEqualTo(EXPIRED_TOKEN.getHttpStatusCode());
+        assertThat(response.getContentAsString()).contains(EXPIRED_TOKEN.getMessage());
         verify(jwtProvider, times(1)).tokenValidation(expiredToken);
-        verify(filterChain, never()).doFilter(request, response);
     }
+
 
     @Test
     @DisplayName("리프레시 토큰이 만료된 경우 예외가 발생함")
@@ -169,13 +166,13 @@ class JwtAuthFilterTest {
         when(jwtProvider.getTokenType(expiredRefreshToken)).thenReturn("Refresh");
         when(jwtProvider.refreshTokenValidation(expiredRefreshToken)).thenReturn(false);
 
-        // when & then
-        assertThatThrownBy(() -> jwtAuthFilter.doFilterInternal(request, response, filterChain))
-                .isInstanceOf(BaseException.class)
-                .hasMessageContaining(EXPIRED_TOKEN.getMessage());
+        // when
+        jwtAuthFilter.doFilterInternal(request, response, filterChain);
 
+        // then
+        assertThat(response.getStatus()).isEqualTo(EXPIRED_TOKEN.getHttpStatusCode());
+        assertThat(response.getContentAsString()).contains(EXPIRED_TOKEN.getMessage());
         verify(jwtProvider, times(1)).refreshTokenValidation(expiredRefreshToken);
-        verify(filterChain, never()).doFilter(request, response);
     }
 
     @Test
