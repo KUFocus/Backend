@@ -8,7 +8,6 @@ import org.focus.logmeet.service.ScheduleService;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.SUCCESS;
@@ -43,9 +42,9 @@ public class ScheduleController {
     }
 
     @GetMapping("/{projectId}/schedule-list")
-    public BaseResponse<List<ScheduleListResult>> getScheduleOfProject(@PathVariable Long projectId) {
-        log.info("프로젝트의 스케줄 리스트 요청: projectId={}", projectId);
-        List<ScheduleListResult> results = scheduleService.getScheduleOfProject(projectId);
+    public BaseResponse<List<ScheduleListResult>> getScheduleOfProject(@PathVariable Long projectId, @RequestParam("yearMonth") LocalDate yearMonth) {
+        log.info("프로젝트의 월별 스케줄 리스트 요청: projectId={}, yearMonth={}", projectId, yearMonth);
+        List<ScheduleListResult> results = scheduleService.getScheduleOfProject(projectId, yearMonth);
         return new BaseResponse<>(results);
     }
 
@@ -57,9 +56,9 @@ public class ScheduleController {
     }
 
     @GetMapping("/users/schedule-list")
-    public BaseResponse<List<ScheduleListResult>> getScheduleOfUser() {
-        log.info("유저의 스케줄 리스트 요청");
-        List<ScheduleListResult> results = scheduleService.getScheduleOfUser();
+    public BaseResponse<List<ScheduleListResult>> getScheduleOfUser(@RequestParam("date") LocalDate yearMonth) {
+        log.info("유저의 월별 스케줄 리스트 요청: yearMonth={}", yearMonth);
+        List<ScheduleListResult> results = scheduleService.getScheduleOfUser(yearMonth);
         return new BaseResponse<>(results);
     }
 

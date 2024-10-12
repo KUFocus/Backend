@@ -86,10 +86,12 @@ public class ScheduleService {
 
 
     @CurrentUser
-    public List<ScheduleListResult> getScheduleOfProject(Long projectId) {
+    public List<ScheduleListResult> getScheduleOfProject(Long projectId, LocalDate yearMonth) {
         log.info("프로젝트의 스케줄 리스트 조회 시도: projectId={}", projectId);
         UserProject userProject = validateUserAndProject(projectId);
-        List<Schedule> schedules = scheduleRepository.findSchedulesByProjectId(projectId);
+        int year = yearMonth.getYear();
+        int month = yearMonth.getMonthValue();
+        List<Schedule> schedules = scheduleRepository.findSchedulesByProjectIdAndMonth(projectId, year, month);
 
         return schedules.stream()
                 .map(schedule -> new ScheduleListResult(
@@ -120,7 +122,7 @@ public class ScheduleService {
     }
 
     @CurrentUser
-    public List<ScheduleListResult> getScheduleOfUser() {
+    public List<ScheduleListResult> getScheduleOfUser(LocalDate yearMonth) {
         User currentUser = CurrentUserHolder.get();
 
         if (currentUser == null) {
@@ -128,7 +130,10 @@ public class ScheduleService {
         }
         log.info("유저의 스케줄 리스트 조회 시도: userId={}", currentUser.getId());
 
-        List<Schedule> schedules = scheduleRepository.findSchedulesByUserId(currentUser.getId());
+        int year = yearMonth.getYear();
+        int month = yearMonth.getMonthValue();
+        List<Schedule> schedules = scheduleRepository.findSchedulesByProjectIdAndMonth(currentUser.getId(), year, month);
+
         return getScheduleListResults(currentUser, schedules);
     }
 
