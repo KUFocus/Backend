@@ -1,8 +1,11 @@
 package org.focus.logmeet.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.focus.logmeet.common.response.BaseResponse;
@@ -27,7 +30,8 @@ public class MinutesController {
             @ApiResponse(responseCode = "200", description = "업데이트된 회의록 정보 반환")
     })
     @PutMapping("/update-info")
-    public BaseResponse<MinutesCreateResponse> updateMinutesInfo(@RequestBody MinutesInfoCreateRequest request) {
+    public BaseResponse<MinutesCreateResponse> updateMinutesInfo(
+            @RequestBody MinutesInfoCreateRequest request) {
         return new BaseResponse<>(minutesService.updateMinutesInfo(request.getMinutesId(), request.getMinutesName(), request.getProjectId()));
     }
 
@@ -35,8 +39,9 @@ public class MinutesController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "생성된 회의록 정보 반환")
     })
-    @PostMapping("/upload-file") //TODO: 동일 파일명 업로드 시 덮어쓰는 문제 처리 필요, 파일 접근 권한 관리 필요
-    public BaseResponse<MinutesFileUploadResponse> uploadFile(@RequestBody MinutesFileUploadRequest request) {
+    @PostMapping("/upload-file")
+    public BaseResponse<MinutesFileUploadResponse> uploadFile(
+            @RequestBody MinutesFileUploadRequest request) {
         log.info("파일 업로드 요청: fileName={}, fileType={}", request.getFileName(), request.getFileType());
         MinutesFileUploadResponse response = minutesService.uploadFile(request.getBase64FileData(), request.getFileName(), request.getFileType());
         return new BaseResponse<>(response);
@@ -46,8 +51,10 @@ public class MinutesController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "요약된 텍스트 반환")
     })
-    @PostMapping("/{minutesId}/summarize-text") //TODO: 텍스트 요약에서 일정 추출 로직 필요
-    public BaseResponse<MinutesSummarizeResult> summarizeText(@PathVariable Long minutesId) {
+    @PostMapping("/{minutesId}/summarize-text")
+    public BaseResponse<MinutesSummarizeResult> summarizeText(
+            @Parameter(name = "minutesId", description = "요약할 회의록의 고유 ID", required = true)
+            @PathVariable Long minutesId) {
         log.info("텍스트 요약 요청: minutesId={}", minutesId);
         MinutesSummarizeResult summarizedText = minutesService.summarizeText(minutesId);
         return new BaseResponse<>(summarizedText);
@@ -58,7 +65,8 @@ public class MinutesController {
             @ApiResponse(responseCode = "200", description = "생성된 회의록 정보 반환")
     })
     @PostMapping("/upload-content")
-    public BaseResponse<MinutesCreateResponse> uploadManualEntry(@RequestBody MinutesManuallyCreateRequest request) {
+    public BaseResponse<MinutesCreateResponse> uploadManualEntry(
+            @RequestBody MinutesManuallyCreateRequest request) {
         log.info("직접 작성한 회의록 업로드 요청: minutesName={}, projectId={}", request.getMinutesName(), request.getProjectId());
         MinutesCreateResponse response = minutesService.saveAndUploadManualEntry(request.getTextContent(), request.getMinutesName(), request.getProjectId());
         return new BaseResponse<>(response);
@@ -69,7 +77,9 @@ public class MinutesController {
             @ApiResponse(responseCode = "200", description = "조회된 회의록 정보 반환")
     })
     @GetMapping("/{minutesId}")
-    public BaseResponse<MinutesInfoResult> getMinutes(@PathVariable Long minutesId) {
+    public BaseResponse<MinutesInfoResult> getMinutes(
+            @Parameter(name = "minutesId", description = "조회할 회의록의 고유 ID", required = true)
+            @PathVariable Long minutesId) {
         log.info("회의록 정보 요청: minutesId={}", minutesId);
         MinutesInfoResult result = minutesService.getMinutes(minutesId);
         return new BaseResponse<>(result);
@@ -91,7 +101,9 @@ public class MinutesController {
             @ApiResponse(responseCode = "200", description = "조회된 프로젝트 회의록 리스트 반환")
     })
     @GetMapping("/{projectId}/minutes-list")
-    public BaseResponse<List<MinutesListResult>> getProjectMinutes(@PathVariable Long projectId) {
+    public BaseResponse<List<MinutesListResult>> getProjectMinutes(
+            @Parameter(name = "projectId", description = "조회할 프로젝트의 고유 ID", required = true)
+            @PathVariable Long projectId) {
         log.info("특정 프로젝트에 속한 회의록 리스트 요청: projectId={}", projectId);
         List<MinutesListResult> results = minutesService.getProjectMinutes(projectId);
         return new BaseResponse<>(results);
@@ -102,7 +114,9 @@ public class MinutesController {
             @ApiResponse(responseCode = "200", description = "회의록 삭제 성공")
     })
     @DeleteMapping("/{minutesId}")
-    public BaseResponse<Void> deleteMinutes(@PathVariable Long minutesId) {
+    public BaseResponse<Void> deleteMinutes(
+            @Parameter(name = "minutesId", description = "삭제할 회의록의 고유 ID", required = true)
+            @PathVariable Long minutesId) {
         log.info("회의록 삭제 요청: minutesId={}", minutesId);
         minutesService.deleteMinutes(minutesId);
         return new BaseResponse<>(SUCCESS);
