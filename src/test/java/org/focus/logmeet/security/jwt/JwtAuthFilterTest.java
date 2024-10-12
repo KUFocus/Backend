@@ -19,6 +19,7 @@ import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.EXPIRED_TOKEN;
 import static org.mockito.Mockito.*;
 
@@ -96,21 +97,93 @@ class JwtAuthFilterTest {
     }
 
     @Test
-    @DisplayName("리프레시 토큰이 만료된 경우 예외가 발생함")
-    void testDoFilterInternal_ExpiredRefreshToken() throws ServletException, IOException {
+    @DisplayName("잘못된 토큰 타입이면 INVALID_TOKEN 예외가 발생함")
+    void testDoFilterInternal_InvalidTokenType() throws ServletException, IOException {
         //given
-        String refreshToken = "expiredRefreshToken";
-        request.addHeader("Authorization", "Bearer " + refreshToken);
+        String invalidToken = "invalidTokenType";
+        request.addHeader("Authorization", "Bearer " + invalidToken);
 
-        when(jwtProvider.getHeaderToken(request)).thenReturn(refreshToken);
-        when(jwtProvider.getTokenType(refreshToken)).thenReturn("Refresh");
-        when(jwtProvider.refreshTokenValidation(refreshToken)).thenReturn(false);
+        when(jwtProvider.getHeaderToken(request)).thenReturn(invalidToken);
+        when(jwtProvider.getTokenType(invalidToken)).thenReturn("InvalidType");
+
+        //when & then
+        assertThatThrownBy(() -> jwtAuthFilter.doFilterInternal(request, response, filterChain))
+                .isInstanceOf(BaseException.class)
+                .hasMessageContaining(INVALID_TOKEN.getMessage());
+
+        verify(jwtProvider, times(1)).getTokenType(invalidToken);
+        verify(filterChain, never()).doFilter(request, response);
+    }
+
+
+    @Test
+    @DisplayName("토큰이 없으면 TOKEN_NOT_FOUND 예외가 발생함")
+    void testDoFilterInternal_MissingToken() throws ServletException, IOException {
+        //given Authorization 헤더 없이 요청
+
+        //when & then
+        assertThatThrownBy(() -> jwtAuthFilter.doFilterInternal(request, response, filterChain))
+                .isInstanceOf(BaseException.class)
+                .hasMessageContaining(TOKEN_NOT_FOUND.getMessage());
+
+        verify(jwtProvider, times(1)).getHeaderToken(request);
+        verify(filterChain, never()).doFilter(request, response);
+    }
+
+
+    @Test
+    @DisplayName("액세스 토큰이 만료된 경우 예외가 발생함")
+    void testDoFilterInternal_ExpiredAccessToken() throws ServletException, IOException {
+        //given
+        String expiredToken = "expiredAccessToken";
+        request.addHeader("Authorization", "Bearer " + expiredToken);
+
+        when(jwtProvider.getHeaderToken(request)).thenReturn(expiredToken);
+        when(jwtProvider.getTokenType(expiredToken)).thenReturn("Access");
+        when(jwtProvider.tokenValidation(expiredToken)).thenReturn(false);
 
         //when & then
         assertThatThrownBy(() -> jwtAuthFilter.doFilterInternal(request, response, filterChain))
                 .isInstanceOf(BaseException.class)
                 .hasMessageContaining(EXPIRED_TOKEN.getMessage());
 
+        verify(jwtProvider, times(1)).tokenValidation(expiredToken);
         verify(filterChain, never()).doFilter(request, response);
+    }
+
+    @Test
+    @DisplayName("리프레시 토큰이 만료된 경우 예외가 발생함")
+    void testDoFilterInternal_ExpiredRefreshToken() throws ServletException, IOException {
+        // given
+        String expiredRefreshToken = "expiredRefreshToken";
+        request.addHeader("Authorization", "Bearer " + expiredRefreshToken);
+
+        when(jwtProvider.getHeaderToken(request)).thenReturn(expiredRefreshToken);
+        when(jwtProvider.getTokenType(expiredRefreshToken)).thenReturn("Refresh");
+        when(jwtProvider.refreshTokenValidation(expiredRefreshToken)).thenReturn(false);
+
+        // when & then
+        assertThatThrownBy(() -> jwtAuthFilter.doFilterInternal(request, response, filterChain))
+                .isInstanceOf(BaseException.class)
+                .hasMessageContaining(EXPIRED_TOKEN.getMessage());
+
+        verify(jwtProvider, times(1)).refreshTokenValidation(expiredRefreshToken);
+        verify(filterChain, never()).doFilter(request, response);
+    }
+
+    @Test
+    @DisplayName("shouldNotFilter 테스트: 특정 경로는 필터를 적용하지 않음")
+    void testShouldNotFilter() {
+        request.setRequestURI("/auth/login");
+        assertThat(jwtAuthFilter.shouldNotFilter(request)).isTrue();
+
+        request.setRequestURI("/swagger-ui/index.html");
+        assertThat(jwtAuthFilter.shouldNotFilter(request)).isTrue();
+
+        request.setRequestURI("/v3/api-docs");
+        assertThat(jwtAuthFilter.shouldNotFilter(request)).isTrue();
+
+        request.setRequestURI("/random-path");
+        assertThat(jwtAuthFilter.shouldNotFilter(request)).isFalse();
     }
 }
