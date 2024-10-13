@@ -3,6 +3,7 @@ package org.focus.logmeet.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.focus.logmeet.controller.dto.minutes.*;
 import org.focus.logmeet.domain.enums.MinutesType;
+import org.focus.logmeet.domain.enums.Status;
 import org.focus.logmeet.service.MinutesService;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,9 +18,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.focus.logmeet.domain.enums.ProjectColor.PROJECT_6;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -112,7 +115,7 @@ class MinutesControllerTest {
         assertThat(status).isEqualTo(200);
 
         String content = result.getResponse().getContentAsString();
-        assertThat(content).contains("\"success\":true");  // 성공 여부가 true인지 확인
+        assertThat(content).contains("\"success\":true");
     }
 
     @Test
@@ -156,8 +159,49 @@ class MinutesControllerTest {
         assertThat(status).isEqualTo(200);
 
         String content = result.getResponse().getContentAsString();
-        assertThat(content).contains("\"success\":true");  // 성공 여부가 true인지 확인
+        assertThat(content).contains("\"success\":true");
     }
+
+    @Test
+    @DisplayName("현재 유저의 회의록 리스트 조회가 성공적으로 처리됨")
+    void getMinutesList() throws Exception {
+        // given
+        MinutesListResult minutesListResult = new MinutesListResult(1L, 1L, "Minutes Name", PROJECT_6, MinutesType.VOICE, Status.ACTIVE, LocalDateTime.now());
+        when(minutesService.getMinutesList()).thenReturn(Collections.singletonList(minutesListResult));
+
+        // when
+        MvcResult result = mockMvc.perform(get("/minutes/minutes-list"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // then
+        int status = result.getResponse().getStatus();
+        assertThat(status).isEqualTo(200);
+
+        String content = result.getResponse().getContentAsString();
+        assertThat(content).contains("\"success\":true");
+    }
+
+    @Test
+    @DisplayName("특정 프로젝트의 회의록 리스트 조회가 성공적으로 처리됨")
+    void getProjectMinutes() throws Exception {
+        // given
+        MinutesListResult minutesListResult = new MinutesListResult(1L, 1L, "Minutes Name", PROJECT_6, MinutesType.VOICE, Status.ACTIVE, LocalDateTime.now());
+        when(minutesService.getProjectMinutes(any(Long.class))).thenReturn(Collections.singletonList(minutesListResult));
+
+        // when
+        MvcResult result = mockMvc.perform(get("/minutes/1/minutes-list"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // then
+        int status = result.getResponse().getStatus();
+        assertThat(status).isEqualTo(200);
+
+        String content = result.getResponse().getContentAsString();
+        assertThat(content).contains("\"success\":true");
+    }
+
 
     @Test
     @DisplayName("회의록 삭제 요청이 성공적으로 처리됨")
