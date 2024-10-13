@@ -74,12 +74,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     private void setErrorResponse(HttpServletResponse response, BaseExceptionResponseStatus status, String message) throws IOException {
-        response.setStatus(HttpStatus.UNAUTHORIZED.value());  // 예외에 따라 상태 코드를 설정합니다.
+        response.setStatus(status.getHttpStatusCode());
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
-        BaseResponse<String> errorResponse = new BaseResponse<>(status, message);  // 예외 메시지를 응답 본문으로 설정
-        response.getWriter().write(new ObjectMapper().writeValueAsString(errorResponse));  // JSON 응답으로 변환하여 클라이언트로 전송
+        BaseResponse<String> errorResponse = new BaseResponse<>(status, message);
+        response.getWriter().write(new ObjectMapper().writeValueAsString(errorResponse));
     }
+
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {

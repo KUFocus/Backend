@@ -7,7 +7,7 @@ import lombok.Getter;
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.SUCCESS;
 
 @Getter
-@JsonPropertyOrder({"isSuccess", "code", "message", "result"})
+@JsonPropertyOrder({"isSuccess", "httpStatus", "code", "message", "result"})
 public class BaseResponse<T> {
 
     private final boolean isSuccess;
@@ -16,6 +16,8 @@ public class BaseResponse<T> {
 
     private final int code;
 
+    private final int httpStatus;
+
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final T result;
 
@@ -23,6 +25,7 @@ public class BaseResponse<T> {
         this.isSuccess = SUCCESS.getIsSuccess();
         this.code = SUCCESS.getCode();
         this.message = SUCCESS.getMessage();
+        this.httpStatus = SUCCESS.getHttpStatusCode();
         this.result = result;
     }
 
@@ -30,6 +33,7 @@ public class BaseResponse<T> {
         this.isSuccess = status.getIsSuccess();
         this.code = status.getCode();
         this.message = status.getMessage();
+        this.httpStatus = status.getHttpStatusCode();
         this.result = result;
     }
 
@@ -37,6 +41,7 @@ public class BaseResponse<T> {
         this.isSuccess = status.getIsSuccess();
         this.code = status.getCode();
         this.message = status.getMessage();
+        this.httpStatus = status.getHttpStatusCode();
         this.result = null;
     }
 }

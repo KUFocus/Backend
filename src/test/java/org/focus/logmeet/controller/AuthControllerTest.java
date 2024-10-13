@@ -2,11 +2,13 @@ package org.focus.logmeet.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import org.focus.logmeet.common.exception.GlobalExceptionHandler;
 import org.focus.logmeet.controller.dto.auth.AuthLoginRequest;
 import org.focus.logmeet.controller.dto.auth.AuthLoginResponse;
 import org.focus.logmeet.controller.dto.auth.AuthSignupRequest;
 import org.focus.logmeet.controller.dto.auth.AuthSignupResponse;
+import org.focus.logmeet.security.jwt.JwtProvider;
 import org.focus.logmeet.service.AuthService;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +41,9 @@ class AuthControllerTest {
 
     @Mock
     private AuthService authService;
+
+    @Mock
+    private JwtProvider jwtProvider;
 
     @BeforeAll
     static void setupOnce() {
@@ -295,5 +300,23 @@ class AuthControllerTest {
         String expectedMessage = "userName: 사용자 이름은 특수 문자를 제외한 모든 문자를 포함할 수 있으며, 최대 10자 이내여야 합니다.";
 
         assertThat(jsonNode.path("result").asText()).contains(expectedMessage);
+    }
+
+    @Test
+    @DisplayName("로그아웃 요청이 성공적으로 처리됨")
+    void logout() throws Exception {
+        // given
+        String validToken = "validToken";
+        when(jwtProvider.getHeaderToken(any(HttpServletRequest.class))).thenReturn(validToken);
+
+        // when
+        MvcResult result = mockMvc.perform(post("/auth/logout")
+                        .header("Authorization", "Bearer " + validToken))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // then
+        int status = result.getResponse().getStatus();
+        assertThat(status).isEqualTo(200); // 로그아웃이 성공적으로 처리되었는지 확인
     }
 }

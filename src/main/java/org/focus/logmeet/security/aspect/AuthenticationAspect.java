@@ -2,6 +2,7 @@ package org.focus.logmeet.security.aspect;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.aspectj.lang.annotation.After;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.focus.logmeet.common.exception.BaseException;
@@ -23,6 +24,7 @@ public class AuthenticationAspect {
 
     @Before("@annotation(org.focus.logmeet.security.annotation.CurrentUser)")
     public void injectCurrentUser() {
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         log.debug("Authentication 객체: {}", authentication);
 
@@ -39,5 +41,11 @@ public class AuthenticationAspect {
 
             throw new BaseException(USER_NOT_AUTHENTICATED);
         }
+    }
+
+    @After("@annotation(org.focus.logmeet.security.annotation.CurrentUser)")
+    public void clearCurrentUser() {
+        log.debug("CurrentUserHolder clear 호출");
+        CurrentUserHolder.clear();
     }
 }
