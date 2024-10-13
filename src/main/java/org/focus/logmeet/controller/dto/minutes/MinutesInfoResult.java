@@ -1,13 +1,11 @@
 package org.focus.logmeet.controller.dto.minutes;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import org.focus.logmeet.controller.dto.project.UserProjectDto;
+import lombok.Getter;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
-@Data
+@Getter
 @AllArgsConstructor
 public class MinutesInfoResult {
     private Long minutesId;
