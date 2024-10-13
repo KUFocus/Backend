@@ -1,7 +1,6 @@
 package org.focus.logmeet.controller.dto.project;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.Getter;
 import org.focus.logmeet.domain.enums.ProjectColor;
 import org.focus.logmeet.domain.enums.Role;
