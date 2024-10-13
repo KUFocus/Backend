@@ -1,11 +1,9 @@
 package org.focus.logmeet.controller.dto.minutes;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
 
-@Data
-@NoArgsConstructor
+@Getter
 @AllArgsConstructor
 public class MinutesCreateResponse {
     private Long minutesId;

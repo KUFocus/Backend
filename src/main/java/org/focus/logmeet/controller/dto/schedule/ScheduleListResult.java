@@ -1,15 +1,13 @@
 package org.focus.logmeet.controller.dto.schedule;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
 import org.focus.logmeet.domain.enums.ProjectColor;
 
 import java.time.LocalDateTime;
 
-@Data
+@Getter
 @AllArgsConstructor
-@NoArgsConstructor
 public class ScheduleListResult {
     private Long scheduleId;
     private String projectName;
