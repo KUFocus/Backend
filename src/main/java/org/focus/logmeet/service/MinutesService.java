@@ -45,7 +45,7 @@ import static org.focus.logmeet.domain.enums.Status.TEMP;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class MinutesService {
+public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 최소화 필요
 
     private final S3Service s3Service;
     private final MinutesRepository minutesRepository;
@@ -165,13 +165,23 @@ public class MinutesService {
         }
     }
 
-    // TODO: GPT 요약 API 호출 메서드 추가 보완 필요
     @Transactional
+    @CurrentUser
     public MinutesSummarizeResult summarizeText(Long minutesId) {
         log.info("텍스트 요약 시도: minutesId={}", minutesId);
+        User currentUser = CurrentUserHolder.get();
+        if (currentUser == null) {
+            throw new BaseException(USER_NOT_AUTHENTICATED);
+        }
 
         Minutes minutes = minutesRepository.findById(minutesId)
                 .orElseThrow(() -> new BaseException(MINUTES_NOT_FOUND));
+
+
+        Project project = minutes.getProject();
+        if (userProjectRepository.findByUserAndProject(currentUser, project).isEmpty()) {
+            throw new BaseException(USER_NOT_IN_PROJECT);
+        }
 
         String extractedText = minutes.getContent();
         try {
@@ -243,14 +253,24 @@ public class MinutesService {
 
     // 회의록 정보 업데이트
     @Transactional
+    @CurrentUser
     public MinutesCreateResponse updateMinutesInfo(Long minutesId, String minutesName, Long projectId) {
         log.info("회의록 정보 업데이트 시도: minutesId={}, minutesName={}, projectId={}", minutesId, minutesName, projectId);
+
+        User currentUser = CurrentUserHolder.get();
+        if (currentUser == null) {
+            throw new BaseException(USER_NOT_AUTHENTICATED);
+        }
 
         Minutes minutes = minutesRepository.findById(minutesId)
                 .orElseThrow(() -> new BaseException(MINUTES_NOT_FOUND));
 
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new BaseException(PROJECT_NOT_FOUND));
+
+        if (userProjectRepository.findByUserAndProject(currentUser, project).isEmpty()) {
+            throw new BaseException(USER_NOT_IN_PROJECT);
+        }
 
         minutes.setName(minutesName);
         minutes.setProject(project);
@@ -262,11 +282,21 @@ public class MinutesService {
     }
 
     // 수동 입력된 회의록을 저장
+    @CurrentUser
     public MinutesCreateResponse saveAndUploadManualEntry(String textContent, String minutesName, Long projectId) {
         log.info("직접 회의록 생성 시도: minutesName={}", minutesName);
 
+        User currentUser = CurrentUserHolder.get();
+        if (currentUser == null) {
+            throw new BaseException(USER_NOT_AUTHENTICATED);
+        }
+
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new BaseException(PROJECT_NOT_FOUND));
+
+        if (userProjectRepository.findByUserAndProject(currentUser, project).isEmpty()) {
+            throw new BaseException(USER_NOT_IN_PROJECT);
+        }
 
         Minutes minutes = new Minutes();
         minutes.setProject(project);
@@ -283,10 +313,22 @@ public class MinutesService {
     }
 
 
+    @CurrentUser
     public MinutesInfoResult getMinutes(Long minutesId) {
         log.info("회의록 정보 조회: minutesId={}", minutesId);
+        User currentUser = CurrentUserHolder.get();
+        if (currentUser == null) {
+            throw new BaseException(USER_NOT_AUTHENTICATED);
+        }
+
         Minutes minutes = minutesRepository.findById(minutesId)
                 .orElseThrow(() -> new BaseException(MINUTES_NOT_FOUND));
+
+        Project project = minutes.getProject();
+        if (userProjectRepository.findByUserAndProject(currentUser, project).isEmpty()) {
+            throw new BaseException(USER_NOT_IN_PROJECT);
+        }
+
         return new MinutesInfoResult(minutes.getId(), minutes.getProject().getId(), minutes.getName(), minutes.getContent(), minutes.getFilePath(), minutes.getCreatedAt());
     }
 
@@ -323,15 +365,17 @@ public class MinutesService {
         }).collect(Collectors.toList());
     }
 
+    @CurrentUser
     public List<MinutesListResult> getProjectMinutes(Long projectId) {
         log.info("프로젝트에 속한 회의록 조회 시도: projectId={}", projectId);
-
+        User currentUser = CurrentUserHolder.get();
         List<Minutes> minutesList = minutesRepository.findAllByProjectId(projectId);
 
-        boolean exists = projectRepository.existsById(projectId);
-        if (!exists) {
-            throw new BaseException(PROJECT_NOT_FOUND);
-        }
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new BaseException(PROJECT_NOT_FOUND));
+
+        UserProject memberProject = userProjectRepository.findByUserAndProject(currentUser, project)
+                .orElseThrow(() -> new BaseException(USER_NOT_IN_PROJECT));
 
         if (minutesList.isEmpty()) {
             log.info("프로젝트에 회의록이 없음: projectId={}", projectId);
