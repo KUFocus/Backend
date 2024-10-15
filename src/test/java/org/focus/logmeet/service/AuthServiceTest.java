@@ -31,7 +31,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class AuthServiceTest { // TODO: 중복된 부분 SetUp 필요
+class AuthServiceTest {
     @InjectMocks
     private AuthService authService;
 
