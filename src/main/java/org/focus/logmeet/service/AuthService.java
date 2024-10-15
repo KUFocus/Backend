@@ -81,7 +81,6 @@ public class AuthService {
         if (refreshTokenOptional.isPresent()) {
             refreshTokenRepository.delete(refreshTokenOptional.get());
             log.info("로그아웃 성공: email={}", email);
-            throw new BaseException(SUCCESS);
         } else {
             log.warn("로그아웃 실패: email={}, Refresh Token이 존재하지 않음", email);
             throw new BaseException(TOKEN_NOT_FOUND);
