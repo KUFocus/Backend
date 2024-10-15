@@ -25,7 +25,7 @@ public class MinutesController {
 
     private final MinutesService minutesService;
 
-    @Operation(summary = "업데이트된 회의록 정보 반환", description = "파일로 생성된 회의록의 이름과 프로젝트 정보를 업데이트합니다.")
+    @Operation(summary = "회의록 업데이트", description = "파일로 생성된 회의록의 이름과 프로젝트 정보를 업데이트합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "업데이트된 회의록 정보 반환")
     })
