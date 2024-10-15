@@ -87,7 +87,7 @@ class AuthControllerTest {
     void login() throws Exception {
         //given
         AuthLoginRequest request = new AuthLoginRequest("test@example.com", "password123");
-        AuthLoginResponse response = new AuthLoginResponse("accessToken", "refreshToken");
+        AuthLoginResponse response = new AuthLoginResponse(116L, "accessToken", "refreshToken");
         when(authService.login(any(AuthLoginRequest.class))).thenReturn(response);
 
         //when
