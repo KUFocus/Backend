@@ -387,7 +387,7 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
                         minutes.getId(),
                         projectId,
                         minutes.getName(),
-                        null,
+                        memberProject.getColor(),
                         minutes.getType(),
                         minutes.getStatus(),
                         minutes.getCreatedAt()
