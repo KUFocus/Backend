@@ -14,6 +14,7 @@ public class MinutesInfoResult {
     private String name;
     private String content;
     private String filePath;
+    private String summary;
     private MinutesType minutesType;
     private LocalDateTime createdAt;
 }
