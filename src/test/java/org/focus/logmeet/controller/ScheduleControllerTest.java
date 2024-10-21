@@ -119,8 +119,8 @@ class ScheduleControllerTest {
     @DisplayName("프로젝트의 월별 스케줄 조회가 성공적으로 처리됨")
     void getScheduleOfProject() throws Exception {
         // given
-        ScheduleListResult scheduleListResult = new ScheduleListResult(1L, "Project Name", "졸프 6주차 활동지 제출", LocalDateTime.now(), ProjectColor.PROJECT_3);
-        when(scheduleService.getScheduleOfProject(any(Long.class), any(LocalDate.class))).thenReturn(Collections.singletonList(scheduleListResult));
+        ScheduleMonthlyListResult scheduleMonthlyListResult = new ScheduleMonthlyListResult(LocalDateTime.now().getDayOfMonth(), Collections.singleton(ProjectColor.PROJECT_3));
+        when(scheduleService.getScheduleOfProject(any(Long.class), any(LocalDate.class))).thenReturn(Collections.singletonList(scheduleMonthlyListResult));
 
         // when
         MvcResult result = mockMvc.perform(get("/schedule/1/schedule-list")
@@ -161,8 +161,8 @@ class ScheduleControllerTest {
     @DisplayName("사용자의 월별 스케줄 조회가 성공적으로 처리됨")
     void getScheduleOfUser() throws Exception {
         // given
-        ScheduleListResult scheduleListResult = new ScheduleListResult(1L, "Project Name", "졸프 6주차 활동지 제출", LocalDateTime.now(), ProjectColor.PROJECT_3);
-        when(scheduleService.getScheduleOfUser(any(LocalDate.class))).thenReturn(Collections.singletonList(scheduleListResult));
+        ScheduleMonthlyListResult scheduleMonthlyListResult = new ScheduleMonthlyListResult(LocalDateTime.now().getDayOfMonth(), Collections.singleton(ProjectColor.PROJECT_3));
+        when(scheduleService.getScheduleOfUser(any(LocalDate.class))).thenReturn(Collections.singletonList(scheduleMonthlyListResult));
 
         // when
         MvcResult result = mockMvc.perform(get("/schedule/users/schedule-list")
