@@ -329,7 +329,7 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
             throw new BaseException(USER_NOT_IN_PROJECT);
         }
 
-        return new MinutesInfoResult(minutes.getId(), minutes.getProject().getId(), minutes.getName(), minutes.getContent(), minutes.getFilePath(), minutes.getType(), minutes.getCreatedAt());
+        return new MinutesInfoResult(minutes.getId(), minutes.getProject().getId(), minutes.getName(), minutes.getContent(), minutes.getFilePath(), minutes.getSummary(), minutes.getType(), minutes.getCreatedAt());
     }
 
     @Transactional

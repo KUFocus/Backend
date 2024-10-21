@@ -146,7 +146,7 @@ class MinutesControllerTest {
     @DisplayName("회의록 정보 조회가 성공적으로 처리됨")
     void getMinutes() throws Exception {
         // given
-        MinutesInfoResult response = new MinutesInfoResult(1L, 1L, "Minutes Name", "Content", "file/path", MinutesType.MANUAL, LocalDateTime.now());
+        MinutesInfoResult response = new MinutesInfoResult(1L, 1L, "Minutes Name", "Content", "file/path", null, MinutesType.MANUAL, LocalDateTime.now());
         when(minutesService.getMinutes(any(Long.class))).thenReturn(response);
 
         // when
