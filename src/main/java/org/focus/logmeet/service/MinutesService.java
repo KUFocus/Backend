@@ -329,7 +329,7 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
             throw new BaseException(USER_NOT_IN_PROJECT);
         }
 
-        return new MinutesInfoResult(minutes.getId(), minutes.getProject().getId(), minutes.getName(), minutes.getContent(), minutes.getFilePath(), minutes.getCreatedAt());
+        return new MinutesInfoResult(minutes.getId(), minutes.getProject().getId(), minutes.getName(), minutes.getContent(), minutes.getFilePath(), minutes.getSummary(), minutes.getType(), minutes.getCreatedAt());
     }
 
     @Transactional
@@ -346,23 +346,25 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
         List<UserProject> userProjects = userProjectRepository.findAllByUser(currentUser);
 
         return userProjects.stream().flatMap(up -> {
-            Project project = up.getProject();
-            ProjectColor projectColor = up.getColor();
+                    Project project = up.getProject();
+                    ProjectColor projectColor = up.getColor();
 
-            List<Minutes> minutesList = minutesRepository.findAllByProjectId(project.getId());
+                    List<Minutes> minutesList = minutesRepository.findAllByProjectId(project.getId());
 
-            return minutesList.stream().map(minutes ->
-                    new MinutesListResult(
-                            minutes.getId(),
-                            project.getId(),
-                            minutes.getName(),
-                            projectColor,
-                            minutes.getType(),
-                            minutes.getStatus(),
-                            minutes.getCreatedAt()
-                    )
-            );
-        }).collect(Collectors.toList());
+                    return minutesList.stream().map(minutes ->
+                            new MinutesListResult(
+                                    minutes.getId(),
+                                    project.getId(),
+                                    minutes.getName(),
+                                    projectColor,
+                                    minutes.getType(),
+                                    minutes.getStatus(),
+                                    minutes.getCreatedAt()
+                            )
+                    );
+                })
+                .sorted(Comparator.comparing(MinutesListResult::getCreatedAt).reversed())
+                .collect(Collectors.toList());
     }
 
     @CurrentUser
@@ -392,7 +394,8 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
                         minutes.getStatus(),
                         minutes.getCreatedAt()
                 )
-        ).collect(Collectors.toList());
+        ).sorted(Comparator.comparing(MinutesListResult::getCreatedAt).reversed())
+        .collect(Collectors.toList());
     }
 
     @Transactional

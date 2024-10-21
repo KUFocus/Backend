@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.USER_NOT_IN_PROJECT;
@@ -86,21 +87,19 @@ public class ScheduleService {
 
 
     @CurrentUser
-    public List<ScheduleListResult> getScheduleOfProject(Long projectId, LocalDate yearMonth) {
-        log.info("프로젝트의 스케줄 리스트 조회 시도: projectId={}", projectId);
+    public List<ScheduleMonthlyListResult> getScheduleOfProject(Long projectId, LocalDate yearMonth) {
+        log.info("프로젝트의 월별 스케줄 리스트 조회 시도: projectId={}", projectId);
         UserProject userProject = validateUserAndProject(projectId);
         int year = yearMonth.getYear();
         int month = yearMonth.getMonthValue();
         List<Schedule> schedules = scheduleRepository.findSchedulesByProjectIdAndMonth(projectId, year, month);
 
         return schedules.stream()
-                .map(schedule -> new ScheduleListResult(
-                        schedule.getId(),
-                        schedule.getProject().getName(),
-                        schedule.getContent(),
-                        schedule.getScheduleDate(),
-                        userProject.getColor()
-                ))
+                .collect(Collectors.groupingBy(schedule -> schedule.getScheduleDate().getDayOfMonth(),
+                        Collectors.mapping(schedule -> userProject.getColor(), Collectors.toSet())))
+                .entrySet().stream()
+                .map(entry -> new ScheduleMonthlyListResult(
+                        entry.getKey(), entry.getValue()))
                 .toList();
     }
 
@@ -122,21 +121,33 @@ public class ScheduleService {
     }
 
     @CurrentUser
-    public List<ScheduleListResult> getScheduleOfUser(LocalDate yearMonth) {
+    public List<ScheduleMonthlyListResult> getScheduleOfUser(LocalDate yearMonth) {
         User currentUser = CurrentUserHolder.get();
 
         if (currentUser == null) {
             throw new BaseException(USER_NOT_AUTHENTICATED);
         }
-        log.info("유저의 스케줄 리스트 조회 시도: userId={}", currentUser.getId());
+        log.info("유저의 월별 스케줄 리스트 조회 시도: userId={}", currentUser.getId());
 
         int year = yearMonth.getYear();
         int month = yearMonth.getMonthValue();
         List<Schedule> schedules = scheduleRepository.findSchedulesByProjectIdAndMonth(currentUser.getId(), year, month);
 
-        return getScheduleListResults(currentUser, schedules);
+        return schedules.stream()
+                .collect(Collectors.groupingBy(
+                        schedule -> schedule.getScheduleDate().getDayOfMonth(),
+                        Collectors.mapping(schedule -> {
+                            UserProject userProject = schedule.getProject().getUserProjects().stream()
+                                    .filter(up -> up.getUser().getId().equals(currentUser.getId()))
+                                    .findFirst()
+                                    .orElseThrow(() -> new BaseException(USER_NOT_IN_PROJECT));
+                            return userProject.getColor();
+                        }, Collectors.toSet())
+                ))
+                .entrySet().stream()
+                .map(entry -> new ScheduleMonthlyListResult(entry.getKey(), entry.getValue()))
+                .toList();
     }
-
     @CurrentUser
     public List<ScheduleListResult> getScheduleOfUserAt(LocalDate date) {
         User currentUser = CurrentUserHolder.get();

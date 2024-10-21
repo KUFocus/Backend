@@ -72,13 +72,13 @@ public class ScheduleController {
                     content = @Content(schema = @Schema(implementation = ScheduleListResult.class)))
     })
     @GetMapping("/{projectId}/schedule-list")
-    public BaseResponse<List<ScheduleListResult>> getScheduleOfProject(
+    public BaseResponse<List<ScheduleMonthlyListResult>> getScheduleOfProject(
             @Parameter(name = "projectId", description = "조회할 프로젝트의 ID", required = true)
             @PathVariable Long projectId,
             @Parameter(name = "yearMonth", description = "조회할 연도 및 월 (yyyy-MM-xx 형식)", required = true)
             @RequestParam("yearMonth") LocalDate yearMonth) {
         log.info("프로젝트의 월별 스케줄 리스트 요청: projectId={}, yearMonth={}", projectId, yearMonth);
-        List<ScheduleListResult> results = scheduleService.getScheduleOfProject(projectId, yearMonth);
+        List<ScheduleMonthlyListResult> results = scheduleService.getScheduleOfProject(projectId, yearMonth);
         return new BaseResponse<>(results);
     }
 
@@ -104,11 +104,11 @@ public class ScheduleController {
                     content = @Content(schema = @Schema(implementation = ScheduleListResult.class)))
     })
     @GetMapping("/users/schedule-list")
-    public BaseResponse<List<ScheduleListResult>> getScheduleOfUser(
+    public BaseResponse<List<ScheduleMonthlyListResult>> getScheduleOfUser(
             @Parameter(name = "yearMonth", description = "조회할 연도 및 월 (yyyy-MM-xx 형식)", required = true)
             @RequestParam("yearMonth") LocalDate yearMonth) {
         log.info("유저의 월별 스케줄 리스트 요청: yearMonth={}", yearMonth);
-        List<ScheduleListResult> results = scheduleService.getScheduleOfUser(yearMonth);
+        List<ScheduleMonthlyListResult> results = scheduleService.getScheduleOfUser(yearMonth);
         return new BaseResponse<>(results);
     }
 
