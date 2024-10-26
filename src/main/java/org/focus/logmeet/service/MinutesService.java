@@ -99,7 +99,7 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
         minutesRepository.save(minutes);
         log.info("임시 회의록 저장 완료: minutesId={}, fileType={}", minutes.getId(), fileType);
 
-        return new MinutesFileUploadResponse(minutes.getFilePath(), minutes.getType());
+        return new MinutesFileUploadResponse(minutes.getId(), minutes.getFilePath(), minutes.getType());
     }
 
     // 음성 파일을 S3에 업로드 및 Flask 서버에 텍스트 변환 요청 처리
