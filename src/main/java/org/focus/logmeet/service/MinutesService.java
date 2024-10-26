@@ -441,17 +441,22 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
 
     // Base64 문자열을 파일로 디코딩하는 메서드
     protected File decodeBase64ToFile(String base64FileData, String fileName) {
-        // Base64 데이터를 디코딩
-        byte[] decodedBytes = Base64.getDecoder().decode(base64FileData);
+        try {
+            // Base64 데이터를 디코딩
+            byte[] decodedBytes = Base64.getDecoder().decode(base64FileData);
 
-        // 파일을 임시 디렉터리에 저장
-        File tempFile = new File(System.getProperty("java.io.tmpdir"), fileName);
-        try (FileOutputStream fos = new FileOutputStream(tempFile)) {
-            fos.write(decodedBytes);
-        } catch (IOException e) {
-            log.error("파일 디코딩 중 오류 발생: {}", e.getMessage());
-            throw new BaseException(S3_FILE_DECODING_ERROR);
+            // 파일을 임시 디렉터리에 저장
+            File tempFile = new File(System.getProperty("java.io.tmpdir"), fileName);
+            try (FileOutputStream fos = new FileOutputStream(tempFile)) {
+                fos.write(decodedBytes);
+            } catch (IOException e) {
+                log.error("파일 디코딩 중 오류 발생: {}", e.getMessage());
+                throw new BaseException(S3_FILE_DECODING_ERROR);
+            }
+            return tempFile;
+        } catch (IllegalArgumentException e) {
+            log.error("Base64 디코딩 오류: {}", e.getMessage());
+            throw new BaseException(MINUTES_INVALID_BASE64_DATA);
         }
-        return tempFile;
     }
 }
