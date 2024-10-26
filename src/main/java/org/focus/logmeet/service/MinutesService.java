@@ -429,14 +429,9 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
     // 파일 이름을 URL 인코딩하여 실제 URL을 생성하는 메서드
     protected String generateFileUrl(String directory, String fileName) {
         String baseUrl = "https://kr.object.ncloudstorage.com/logmeet/";
-        try {
-            // 파일 이름을 URL 인코딩
-            String encodedFileName = URLEncoder.encode(fileName, "UTF-8");
-            return baseUrl + directory + "/" + encodedFileName;
-        } catch (UnsupportedEncodingException e) {
-            log.error("파일 이름 URL 인코딩 중 오류 발생: {}", e.getMessage());
-            throw new BaseException(MINUTES_FILE_URL_ENCODING_ERROR);
-        }
+        // 파일 이름을 URL 인코딩
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8); //TODO: 공백을 %20으로 변환할지 고민..
+        return baseUrl + directory + "/" + encodedFileName;
     }
 
     // Base64 문자열을 파일로 디코딩하는 메서드
