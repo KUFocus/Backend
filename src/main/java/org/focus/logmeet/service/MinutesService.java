@@ -1,5 +1,7 @@
 package org.focus.logmeet.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.focus.logmeet.common.exception.BaseException;
@@ -38,7 +40,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
-import static org.focus.logmeet.domain.enums.MinutesType.MANUAL;
+import static org.focus.logmeet.domain.enums.MinutesType.*;
 import static org.focus.logmeet.domain.enums.Role.LEADER;
 import static org.focus.logmeet.domain.enums.Status.ACTIVE;
 import static org.focus.logmeet.domain.enums.Status.TEMP;
@@ -330,7 +332,37 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
             throw new BaseException(USER_NOT_IN_PROJECT);
         }
 
-        return new MinutesInfoResult(minutes.getId(), minutes.getProject().getId(), minutes.getName(), minutes.getContent(), minutes.getFilePath(), minutes.getSummary(), minutes.getType(), minutes.getCreatedAt());
+        String content = minutes.getContent();
+        String extractedText = extractTextFromContent(content, minutes.getType());
+
+        return new MinutesInfoResult(minutes.getId(), minutes.getProject().getId(), minutes.getProject().getName(), minutes.getName(), extractedText, minutes.getFilePath(), minutes.getSummary(), minutes.getType(), minutes.getCreatedAt());
+    }
+
+    private String extractTextFromContent(String content, MinutesType type) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode rootNode = objectMapper.readTree(content);
+
+            String textField = getTextFieldForType(type);
+            JsonNode textNode = rootNode.get(textField);
+            if (textNode != null) {
+                return textNode.asText();
+            }
+        } catch (BaseException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("JSON 파싱 중 오류 발생: {}", e.getMessage());
+            throw new BaseException(MINUTES_INVALID_JSON_FORMAT);
+        }
+        return "";
+    }
+
+    private String getTextFieldForType(MinutesType type) {
+        return switch (type) {
+            case VOICE -> "overall_text";
+            case PICTURE -> "text";
+            default -> throw new BaseException(MINUTES_UNSUPPORTED_TYPE);
+        };
     }
 
     @Transactional
