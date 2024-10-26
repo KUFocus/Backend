@@ -4,6 +4,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.focus.logmeet.common.exception.BaseException;
@@ -22,7 +23,7 @@ public class S3Service {
     private final AmazonS3 s3;
 
     public void uploadFile(String directory, String objectName, File file, String contentType) {
-        try {
+        try (FileInputStream inputStream = createFileInputStream(file)) {
             String bucketName = "logmeet";
             String fullObjectName = directory + "/" + objectName;
 
@@ -31,13 +32,10 @@ public class S3Service {
             metadata.setContentType(contentType);
             metadata.setContentLength(file.length());
 
-            // 파일을 S3에 업로드
-            try (FileInputStream inputStream = new FileInputStream(file)) {
-                PutObjectRequest request = new PutObjectRequest(bucketName, fullObjectName, inputStream, metadata)
-                        .withCannedAcl(CannedAccessControlList.PublicRead);  //TODO: 전체 공개 파일 보안 검토 필요
+            PutObjectRequest request = new PutObjectRequest(bucketName, fullObjectName, inputStream, metadata)
+                    .withCannedAcl(CannedAccessControlList.PublicRead);
 
-                s3.putObject(request);
-            }
+            s3.putObject(request);
 
             log.info("버킷에 객체 업로드 성공: bucketName={}, ObjectName={}", bucketName, fullObjectName);
         } catch (IOException e) {
@@ -48,4 +46,9 @@ public class S3Service {
             throw new BaseException(BaseExceptionResponseStatus.S3_FILE_UPLOAD_ERROR);
         }
     }
+
+    protected FileInputStream createFileInputStream(File file) throws IOException {
+        return new FileInputStream(file);
+    }
 }
+
