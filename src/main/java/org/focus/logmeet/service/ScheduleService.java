@@ -131,8 +131,8 @@ public class ScheduleService {
 
         int year = yearMonth.getYear();
         int month = yearMonth.getMonthValue();
-        List<Schedule> schedules = scheduleRepository.findSchedulesByProjectIdAndMonth(currentUser.getId(), year, month);
-
+        List<Schedule> schedules = scheduleRepository.findSchedulesByUserIdAndMonth(currentUser.getId(), year, month);
+        log.info(schedules.toString());
         return schedules.stream()
                 .collect(Collectors.groupingBy(
                         schedule -> schedule.getScheduleDate().getDayOfMonth(),

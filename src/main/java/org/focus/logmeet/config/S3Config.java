@@ -23,13 +23,10 @@ public class S3Config {
         String endPoint = "https://kr.object.ncloudstorage.com";
         String regionName = "kr-standard";
 
-        try {
-            return AmazonS3ClientBuilder.standard()
-                    .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(endPoint, regionName))
-                    .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
-                    .build();
-        } catch (Exception e) {
-            throw new RuntimeException("S3 클라이언트 생성 중 오류가 발생했습니다.", e);
-        }
+
+        return AmazonS3ClientBuilder.standard()
+                .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(endPoint, regionName))
+                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
+                .build();
     }
 }

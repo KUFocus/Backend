@@ -1,6 +1,7 @@
 package org.focus.logmeet.service;
 
 import org.focus.logmeet.common.exception.BaseException;
+import org.focus.logmeet.common.response.BaseExceptionResponseStatus;
 import org.focus.logmeet.controller.dto.minutes.*;
 import org.focus.logmeet.controller.dto.schedule.ScheduleDto;
 import org.focus.logmeet.domain.*;
@@ -605,16 +606,20 @@ class MinutesServiceTest {
     }
 
     @Test
-    @DisplayName("회의록 정보 조회 성공")
-    void getMinutes_Success() {
+    @DisplayName("회의록 정보 조회 성공 - VOICE 타입")
+    void getMinutes_Success_VoiceType() {
         // given
         Long minutesId = 1L;
-        Minutes mockMinutes = mock(Minutes.class);
-        Project mockProject = mock(Project.class);
+        String voiceContent = "{\"overall_text\": \"음성 내용입니다.\"}";
 
         when(mockMinutes.getId()).thenReturn(minutesId);
-        when(minutesRepository.findById(minutesId)).thenReturn(Optional.of(mockMinutes));
         when(mockMinutes.getProject()).thenReturn(mockProject);
+        when(mockMinutes.getContent()).thenReturn(voiceContent);
+        when(mockMinutes.getType()).thenReturn(MinutesType.VOICE);
+        when(mockMinutes.getName()).thenReturn("회의록 제목");
+        when(mockMinutes.getFilePath()).thenReturn("file/path");
+        when(mockMinutes.getSummary()).thenReturn("회의 요약");
+        when(minutesRepository.findById(minutesId)).thenReturn(Optional.of(mockMinutes));
         when(userProjectRepository.findByUserAndProject(any(), any())).thenReturn(Optional.of(mock(UserProject.class)));
 
         // when
@@ -623,6 +628,130 @@ class MinutesServiceTest {
         // then
         assertNotNull(result);
         assertEquals(minutesId, result.getMinutesId());
+        assertEquals("음성 내용입니다.", result.getContent());
+    }
+
+    @Test
+    @DisplayName("회의록 정보 조회 성공 - PICTURE 타입")
+    void getMinutes_Success_PictureType() {
+        // given
+        Long minutesId = 2L;
+        String pictureContent = "{\"text\": \"사진 내용입니다.\"}";
+
+        when(mockMinutes.getId()).thenReturn(minutesId);
+        when(mockMinutes.getProject()).thenReturn(mockProject);
+        when(mockMinutes.getContent()).thenReturn(pictureContent);
+        when(mockMinutes.getType()).thenReturn(MinutesType.PICTURE);
+        when(mockMinutes.getName()).thenReturn("사진 회의록 제목");
+        when(mockMinutes.getFilePath()).thenReturn("file/path");
+        when(mockMinutes.getSummary()).thenReturn("사진 회의 요약");
+        when(minutesRepository.findById(minutesId)).thenReturn(Optional.of(mockMinutes));
+        when(userProjectRepository.findByUserAndProject(any(), any())).thenReturn(Optional.of(mock(UserProject.class)));
+
+        // when
+        MinutesInfoResult result = minutesService.getMinutes(minutesId);
+
+        // then
+        assertNotNull(result);
+        assertEquals(minutesId, result.getMinutesId());
+        assertEquals("사진 내용입니다.", result.getContent());
+    }
+
+    @Test
+    @DisplayName("회의록 정보 조회 성공 - JSON에 텍스트 필드가 없는 경우")
+    void getMinutes_MissingTextField_ReturnsEmpty() {
+        // given
+        Long minutesId = 2L;
+        String contentWithoutTextField = "{\"some_other_field\": \"데이터\"}";
+
+        when(mockMinutes.getId()).thenReturn(minutesId);
+        when(mockMinutes.getProject()).thenReturn(mockProject);
+        when(mockMinutes.getContent()).thenReturn(contentWithoutTextField);
+        when(mockMinutes.getType()).thenReturn(MinutesType.VOICE);
+        when(minutesRepository.findById(minutesId)).thenReturn(Optional.of(mockMinutes));
+        when(userProjectRepository.findByUserAndProject(any(), any())).thenReturn(Optional.of(mock(UserProject.class)));
+
+        // when
+        MinutesInfoResult result = minutesService.getMinutes(minutesId);
+
+        // then
+        assertNotNull(result);
+        assertEquals(minutesId, result.getMinutesId());
+        assertEquals("", result.getContent());
+    }
+
+    @Test
+    @DisplayName("지원되지 않는 회의록 타입 예외 발생")
+    void getMinutes_UnsupportedType_ThrowsException() {
+        // given
+        Long minutesId = 1L;
+        String content = "{}";
+
+        when(mockMinutes.getProject()).thenReturn(mockProject);
+        when(mockMinutes.getContent()).thenReturn(content);
+        when(mockMinutes.getType()).thenReturn(MinutesType.MANUAL);
+        when(minutesRepository.findById(minutesId)).thenReturn(Optional.of(mockMinutes));
+        when(userProjectRepository.findByUserAndProject(any(), any())).thenReturn(Optional.of(mock(UserProject.class)));
+
+        // when & then
+        BaseException exception = assertThrows(BaseException.class, () -> minutesService.getMinutes(minutesId));
+        assertEquals(BaseExceptionResponseStatus.MINUTES_UNSUPPORTED_TYPE, exception.getStatus());
+    }
+
+    @Test
+    @DisplayName("회의록 정보 조회 시 인증되지 않은 사용자 예외 발생")
+    void getMinutes_UnauthenticatedUser_ThrowsException() {
+        // given
+        Long minutesId = 1L;
+        CurrentUserHolder.clear();
+
+        // when & then
+        BaseException exception = assertThrows(BaseException.class, () -> minutesService.getMinutes(minutesId));
+        assertEquals(BaseExceptionResponseStatus.USER_NOT_AUTHENTICATED, exception.getStatus());
+    }
+
+    @Test
+    @DisplayName("회의록 정보 조회 시 존재하지 않는 회의록 예외 발생")
+    void getMinutes_NotFound_ThrowsException() {
+        // given
+        Long minutesId = 3L;
+        when(minutesRepository.findById(minutesId)).thenReturn(Optional.empty());
+
+        // when & then
+        BaseException exception = assertThrows(BaseException.class, () -> minutesService.getMinutes(minutesId));
+        assertEquals(BaseExceptionResponseStatus.MINUTES_NOT_FOUND, exception.getStatus());
+    }
+
+    @Test
+    @DisplayName("회의록 정보 조회 시 사용자가 프로젝트에 속하지 않은 경우 예외 발생")
+    void getMinutes_UserNotInProject_ThrowsException() {
+        // given
+        Long minutesId = 1L;
+        when(mockMinutes.getProject()).thenReturn(mockProject);
+        when(minutesRepository.findById(minutesId)).thenReturn(Optional.of(mockMinutes));
+        when(userProjectRepository.findByUserAndProject(any(), any())).thenReturn(Optional.empty());
+
+        // when & then
+        BaseException exception = assertThrows(BaseException.class, () -> minutesService.getMinutes(minutesId));
+        assertEquals(BaseExceptionResponseStatus.USER_NOT_IN_PROJECT, exception.getStatus());
+    }
+
+    @Test
+    @DisplayName("회의록 정보 조회 시 JSON 포맷 오류 예외 발생")
+    void getMinutes_InvalidJsonFormat_ThrowsException() {
+        // given
+        Long minutesId = 1L;
+        String invalidJson = "{invalid json}";
+
+        when(mockMinutes.getProject()).thenReturn(mockProject);
+        when(mockMinutes.getContent()).thenReturn(invalidJson);
+        when(mockMinutes.getType()).thenReturn(MinutesType.VOICE);
+        when(minutesRepository.findById(minutesId)).thenReturn(Optional.of(mockMinutes));
+        when(userProjectRepository.findByUserAndProject(any(), any())).thenReturn(Optional.of(mock(UserProject.class)));
+
+        // when & then
+        BaseException exception = assertThrows(BaseException.class, () -> minutesService.getMinutes(minutesId));
+        assertEquals(BaseExceptionResponseStatus.MINUTES_INVALID_JSON_FORMAT, exception.getStatus());
     }
 
     @Test
