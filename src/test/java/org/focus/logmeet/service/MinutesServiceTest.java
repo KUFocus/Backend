@@ -681,21 +681,25 @@ class MinutesServiceTest {
     }
 
     @Test
-    @DisplayName("지원되지 않는 회의록 타입 예외 발생")
-    void getMinutes_UnsupportedType_ThrowsException() {
+    @DisplayName("MANUAL 타입의 회의록 정보 조회 성공")
+    void getMinutes_ManualType_Success() {
         // given
         Long minutesId = 1L;
-        String content = "{}";
+        String manualContent = "직접 작성한 회의록입니다.";
 
+        when(mockMinutes.getId()).thenReturn(minutesId);
         when(mockMinutes.getProject()).thenReturn(mockProject);
-        when(mockMinutes.getContent()).thenReturn(content);
+        when(mockMinutes.getContent()).thenReturn(manualContent);
         when(mockMinutes.getType()).thenReturn(MinutesType.MANUAL);
         when(minutesRepository.findById(minutesId)).thenReturn(Optional.of(mockMinutes));
         when(userProjectRepository.findByUserAndProject(any(), any())).thenReturn(Optional.of(mock(UserProject.class)));
 
-        // when & then
-        BaseException exception = assertThrows(BaseException.class, () -> minutesService.getMinutes(minutesId));
-        assertEquals(BaseExceptionResponseStatus.MINUTES_UNSUPPORTED_TYPE, exception.getStatus());
+        // when
+        MinutesInfoResult result = minutesService.getMinutes(minutesId);
+
+        // then
+        assertNotNull(result);
+        assertEquals(manualContent, result.getContent());
     }
 
     @Test
