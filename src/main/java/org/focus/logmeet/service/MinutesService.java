@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.*;
@@ -102,7 +103,7 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
     }
 
     // 음성 파일을 S3에 업로드 및 Flask 서버에 텍스트 변환 요청 처리
-    private void uploadToS3AndProcessVoice(File tempFile, String fileName, Minutes minutes) {
+    protected void uploadToS3AndProcessVoice(File tempFile, String fileName, Minutes minutes) {
         try {
             String contentType = "audio/mpeg";
             String directory = "minutes_voice";
@@ -120,7 +121,7 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
     }
 
     // 사진 파일을 S3에 업로드 및 Flask 서버에 이미지 텍스트 변환 요청
-    private void uploadToS3AndProcessPicture(File tempFile, String fileName, Minutes minutes) {
+    protected void uploadToS3AndProcessPicture(File tempFile, String fileName, Minutes minutes) {
         try {
             String contentType = "image/jpeg";
             String directory = "minutes_photo";
@@ -138,7 +139,7 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
     }
 
     // 파일을 Flask 서버에 전송하여 텍스트 변환하는 공통 메서드
-    private String processFileToText(File tempFile, String fileName, String flaskUrl) {
+    protected String processFileToText(File tempFile, String fileName, String flaskUrl) {
         log.info("파일 텍스트 변환 시도: fileName={}, url={}", fileName, flaskUrl); //TODO: 일정 시간 초과 시 통신 종료
 
         try {
@@ -426,7 +427,7 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
     }
 
     // 파일 이름을 URL 인코딩하여 실제 URL을 생성하는 메서드
-    private String generateFileUrl(String directory, String fileName) {
+    protected String generateFileUrl(String directory, String fileName) {
         String baseUrl = "https://kr.object.ncloudstorage.com/logmeet/";
         try {
             // 파일 이름을 URL 인코딩
@@ -439,7 +440,7 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
     }
 
     // Base64 문자열을 파일로 디코딩하는 메서드
-    private File decodeBase64ToFile(String base64FileData, String fileName) {
+    protected File decodeBase64ToFile(String base64FileData, String fileName) {
         // Base64 데이터를 디코딩
         byte[] decodedBytes = Base64.getDecoder().decode(base64FileData);
 
