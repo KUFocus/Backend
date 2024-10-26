@@ -1,15 +1,14 @@
 package org.focus.logmeet.controller.dto.minutes;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.focus.logmeet.controller.dto.schedule.ScheduleDto;
 
 import java.util.List;
 
 @Getter
+@Setter
 @AllArgsConstructor
+@NoArgsConstructor
 public class MinutesSummarizeResult {
     private String summarizedText;
     private List<ScheduleDto> schedules;

@@ -79,7 +79,7 @@ class MinutesControllerTest {
     void uploadFile() throws Exception {
         // given
         MinutesFileUploadRequest request = new MinutesFileUploadRequest("base64data", "testfile.mp3", MinutesType.VOICE);
-        MinutesFileUploadResponse response = new MinutesFileUploadResponse("file/path", MinutesType.VOICE);
+        MinutesFileUploadResponse response = new MinutesFileUploadResponse(1L, "file/path", MinutesType.VOICE);
         when(minutesService.uploadFile(any(String.class), any(String.class), any(MinutesType.class)))
                 .thenReturn(response);
 

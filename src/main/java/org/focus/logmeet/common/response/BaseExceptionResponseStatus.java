@@ -57,6 +57,7 @@ public enum BaseExceptionResponseStatus implements ResponseStatus {
     MINUTES_FILE_URL_ENCODING_ERROR(false, 6010, "파일 이름 URL 인코딩 중 오류 발생했습니다.", 500),
     MINUTES_TEXT_SUMMARY_MISSING(false, 6011, "텍스트 요약 반환값에 요약 정보가 없습니다.", 500),
     MINUTES_TEXT_SUMMARY_API_CALL_FAILED(false, 6012, "텍스트 요약 API 호출을 실패했습니다.", 500),
+    MINUTES_INVALID_BASE64_DATA(false, 6013, "유효하지 않은 Base64 형식입니다.", 400),
 
     // S3 오류
     S3_CLIENT_CREATION_ERROR(false, 7000, "S3 클라이언트 생성 중 오류가 발생했습니다.", 500),
