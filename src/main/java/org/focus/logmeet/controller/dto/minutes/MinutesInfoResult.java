@@ -11,7 +11,8 @@ import java.time.LocalDateTime;
 public class MinutesInfoResult {
     private Long minutesId;
     private Long projectId;
-    private String name;
+    private String projectName;
+    private String minutesName;
     private String content;
     private String filePath;
     private String summary;
