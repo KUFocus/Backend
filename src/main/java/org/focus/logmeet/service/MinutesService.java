@@ -332,10 +332,14 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
             throw new BaseException(USER_NOT_IN_PROJECT);
         }
 
-        String content = minutes.getContent();
-        String extractedText = extractTextFromContent(content, minutes.getType());
+        String content;
+        if (minutes.getType().equals(MinutesType.MANUAL)) {
+            content = minutes.getContent();
+        } else {
+            content = extractTextFromContent(minutes.getContent(), minutes.getType());
+        }
 
-        return new MinutesInfoResult(minutes.getId(), minutes.getProject().getId(), minutes.getProject().getName(), minutes.getName(), extractedText, minutes.getFilePath(), minutes.getSummary(), minutes.getType(), minutes.getCreatedAt());
+        return new MinutesInfoResult(minutes.getId(), minutes.getProject().getId(), minutes.getProject().getName(), minutes.getName(), content, minutes.getFilePath(), minutes.getSummary(), minutes.getType(), minutes.getCreatedAt());
     }
 
     private String extractTextFromContent(String content, MinutesType type) {
@@ -348,8 +352,6 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
             if (textNode != null) {
                 return textNode.asText();
             }
-        } catch (BaseException e) {
-            throw e;
         } catch (Exception e) {
             log.error("JSON 파싱 중 오류 발생: {}", e.getMessage());
             throw new BaseException(MINUTES_INVALID_JSON_FORMAT);
@@ -360,8 +362,7 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
     private String getTextFieldForType(MinutesType type) {
         return switch (type) {
             case VOICE -> "overall_text";
-            case PICTURE -> "text";
-            default -> throw new BaseException(MINUTES_UNSUPPORTED_TYPE);
+            default -> "text";
         };
     }
 
