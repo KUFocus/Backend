@@ -95,6 +95,59 @@ class ScheduleServiceTest {
         verify(mockSchedule).setScheduleDate(request.getScheduleDate());
     }
 
+    @Test
+    @DisplayName("프로젝트의 월별 스케줄 조회 성공")
+    void getScheduleOfProject_Success() {
+        // given
+        Long projectId = 1L;
+        LocalDate yearMonth = LocalDate.of(2024, 10, 1);
+        int year = yearMonth.getYear();
+        int month = yearMonth.getMonthValue();
+
+        when(projectRepository.findById(projectId)).thenReturn(Optional.of(mockProject)); // 프로젝트 모킹 추가
+        when(userProjectRepository.findByUserAndProject(any(), any())).thenReturn(Optional.of(mockUserProject));
+        when(scheduleRepository.findSchedulesByProjectIdAndMonth(projectId, year, month)).thenReturn(List.of(mockSchedule));
+        when(mockSchedule.getScheduleDate()).thenReturn(LocalDateTime.of(2024, 10, 5, 10, 0));
+        when(mockUserProject.getColor()).thenReturn(PROJECT_1);
+
+        // when
+        List<ScheduleMonthlyListResult> result = scheduleService.getScheduleOfProject(projectId, yearMonth);
+
+        // then
+        assertNotNull(result);
+        assertFalse(result.isEmpty());
+        assertEquals(1, result.size());
+        assertEquals(5, result.get(0).getDate());
+        assertTrue(result.get(0).getColors().contains(PROJECT_1));
+    }
+
+    @Test
+    @DisplayName("프로젝트의 월별 스케줄 조회 시 프로젝트에 속하지 않은 경우 예외 발생")
+    void getScheduleOfProject_UserNotInProject_ThrowsException() {
+        // given
+        Long projectId = 1L;
+        LocalDate yearMonth = LocalDate.of(2024, 10, 1);
+
+        when(projectRepository.findById(projectId)).thenReturn(Optional.of(mockProject));
+        when(userProjectRepository.findByUserAndProject(any(), any())).thenReturn(Optional.empty()); // 유저가 프로젝트에 속하지 않음
+
+        // when & then
+        BaseException exception = assertThrows(BaseException.class, () -> scheduleService.getScheduleOfProject(projectId, yearMonth));
+        assertEquals(USER_NOT_IN_PROJECT, exception.getStatus());
+    }
+
+    @Test
+    @DisplayName("프로젝트 유효성 검증 시 인증되지 않은 사용자 예외 발생")
+    void validateUserAndProject_UnauthenticatedUser_ThrowsException() {
+        // given
+        Long projectId = 1L;
+        CurrentUserHolder.clear(); // 현재 유저를 제거하여 인증되지 않은 상태로 만듦
+
+        // when & then
+        BaseException exception = assertThrows(BaseException.class, () -> scheduleService.getScheduleOfProject(projectId, LocalDate.now()));
+        assertEquals(USER_NOT_AUTHENTICATED, exception.getStatus());
+    }
+
 
     @Test
     @DisplayName("스케줄 조회 성공")
@@ -122,6 +175,47 @@ class ScheduleServiceTest {
         assertEquals("Meeting", result.getScheduleContent());
         assertEquals("Project Name", result.getProjectName());
         assertEquals(scheduleDate, result.getScheduleDate());
+    }
+
+    @Test
+    @DisplayName("유저의 월별 스케줄 조회 성공")
+    void getScheduleOfUser_Success() {
+        // given
+        User mockUser = mock(User.class);
+        LocalDate yearMonth = LocalDate.of(2024, 10, 1);
+        int year = yearMonth.getYear();
+        int month = yearMonth.getMonthValue();
+
+        CurrentUserHolder.set(mockUser); // 현재 유저 설정
+        when(mockUser.getId()).thenReturn(1L);
+        when(scheduleRepository.findSchedulesByUserIdAndMonth(mockUser.getId(), year, month)).thenReturn(List.of(mockSchedule));
+        when(mockSchedule.getScheduleDate()).thenReturn(LocalDateTime.of(2024, 10, 5, 10, 0));
+        when(mockSchedule.getProject()).thenReturn(mockProject);
+        when(mockProject.getUserProjects()).thenReturn(List.of(mockUserProject));
+        when(mockUserProject.getUser()).thenReturn(mockUser);
+        when(mockUserProject.getColor()).thenReturn(PROJECT_1);
+
+        // when
+        List<ScheduleMonthlyListResult> result = scheduleService.getScheduleOfUser(yearMonth);
+
+        // then
+        assertNotNull(result);
+        assertFalse(result.isEmpty());
+        assertEquals(1, result.size());
+        assertEquals(5, result.get(0).getDate());
+        assertTrue(result.get(0).getColors().contains(PROJECT_1));
+    }
+
+    @Test
+    @DisplayName("유저의 월별 스케줄 조회 시 인증되지 않은 사용자 예외 발생")
+    void getScheduleOfUser_UnauthenticatedUser_ThrowsException() {
+        // given
+        LocalDate yearMonth = LocalDate.of(2024, 10, 1);
+        CurrentUserHolder.clear(); // 현재 유저를 제거하여 인증되지 않은 상태로 만듦
+
+        // when & then
+        BaseException exception = assertThrows(BaseException.class, () -> scheduleService.getScheduleOfUser(yearMonth));
+        assertEquals(USER_NOT_AUTHENTICATED, exception.getStatus());
     }
 
     @Test
@@ -211,6 +305,28 @@ class ScheduleServiceTest {
     }
 
     @Test
+    @DisplayName("스케줄 삭제 시 유저가 리더가 아닌 경우 예외 발생")
+    void deleteSchedule_UserNotLeader_ThrowsException() {
+        // given
+        Long scheduleId = 1L;
+        Long projectId = 1L;
+        User mockUser = mock(User.class);
+
+        when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(mockSchedule));
+        when(mockSchedule.getProject()).thenReturn(mockProject);
+        when(mockProject.getId()).thenReturn(projectId);
+        when(projectRepository.findById(projectId)).thenReturn(Optional.of(mockProject));
+        when(userProjectRepository.findByUserAndProject(any(), any())).thenReturn(Optional.of(mockUserProject));
+        when(mockUserProject.getRole()).thenReturn(Role.MEMBER); // 리더가 아님
+        when(mockUserProject.getUser()).thenReturn(mockUser);
+        when(mockUser.getId()).thenReturn(1L);
+
+        // when & then
+        BaseException exception = assertThrows(BaseException.class, () -> scheduleService.deleteSchedule(scheduleId));
+        assertEquals(USER_NOT_LEADER, exception.getStatus());
+    }
+
+    @Test
     @DisplayName("프로젝트의 특정 날짜 스케줄 조회 성공")
     void getScheduleOfProjectAt_Success() {
         // given
@@ -254,4 +370,17 @@ class ScheduleServiceTest {
         assertFalse(result.isEmpty());
         assertEquals(1, result.size());
     }
+
+    @Test
+    @DisplayName("유저의 특정 날짜 스케줄 조회 시 인증되지 않은 사용자 예외 발생")
+    void getScheduleOfUserAt_UnauthenticatedUser_ThrowsException() {
+        // given
+        LocalDate date = LocalDate.now();
+        CurrentUserHolder.clear(); // 현재 유저를 제거하여 인증되지 않은 상태로 만듦
+
+        // when & then
+        BaseException exception = assertThrows(BaseException.class, () -> scheduleService.getScheduleOfUserAt(date));
+        assertEquals(USER_NOT_AUTHENTICATED, exception.getStatus());
+    }
+
 }
