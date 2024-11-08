@@ -27,11 +27,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.File;
-import java.io.IOException;
 import java.net.URI;
 import java.time.LocalDateTime;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -90,26 +87,64 @@ class MinutesServiceTest {
     }
 
     @Test
+    @DisplayName("파일 업로드를 위한 Pre-signed URL 생성 성공 - VOICE 파일 타입")
+    void generatePreSignedUrl_Success_VoiceType() {
+        // given
+        String fileName = "sample.mp3";
+        MinutesType fileType = MinutesType.VOICE;
+        String expectedUrlPart = "https://kr.object.ncloudstorage.com/logmeet/minutes_voice/";
+        when(s3Service.generatePreSignedUrl(anyString(), anyString(), anyString())).thenReturn(expectedUrlPart + "uuid_sample.mp3");
+
+        // when
+        PreSignedUrlResponse response = minutesService.generatePreSignedUrl(fileName, fileType);
+
+        // then
+        assertNotNull(response);
+        assertTrue(response.getUrl().contains(expectedUrlPart));
+        assertTrue(response.getFilePath().contains(expectedUrlPart));
+    }
+
+    @Test
+    @DisplayName("파일 업로드를 위한 Pre-signed URL 생성 성공 - PICTURE 파일 타입")
+    void generatePreSignedUrl_Success_PictureType() {
+        // given
+        String fileName = "image.jpg";
+        MinutesType fileType = MinutesType.PICTURE;
+        String expectedUrlPart = "https://kr.object.ncloudstorage.com/logmeet/minutes_photo/";
+        when(s3Service.generatePreSignedUrl(anyString(), anyString(), anyString())).thenReturn(expectedUrlPart + "uuid_image.jpg");
+
+        // when
+        PreSignedUrlResponse response = minutesService.generatePreSignedUrl(fileName, fileType);
+
+        // then
+        assertNotNull(response);
+        assertTrue(response.getUrl().contains(expectedUrlPart));
+        assertTrue(response.getFilePath().contains(expectedUrlPart));
+    }
+
+
+    @Test
+    @DisplayName("지원되지 않는 파일 타입 요청 시 예외 발생")
+    void generatePreSignedUrl_UnsupportedFileType_ThrowsException() {
+        // given
+        String fileName = "document.pdf";
+        MinutesType unsupportedFileType = MinutesType.MANUAL;
+
+        // when & then
+        BaseException exception = assertThrows(BaseException.class, () -> minutesService.generatePreSignedUrl(fileName, unsupportedFileType));
+        assertEquals(BaseExceptionResponseStatus.MINUTES_UNSUPPORTED_TYPE, exception.getStatus());
+    }
+
+
+    @Test
     @DisplayName("음성 파일 업로드 후 임시 회의록 생성 성공")
     void uploadFile_Voice_Success() {
         // given
-        String base64FileData = "base64Audio";
-        String fileName = "audio.mp3";
-        MinutesType fileType = MinutesType.VOICE;
+        String filePath = "minutes_voice/file";
 
         MinutesService spyMinutesService = spy(minutesService);
 
-        // Base64 파일 디코딩 모킹
-        File tempFile = mock(File.class);
-        doReturn(tempFile).when(spyMinutesService).decodeBase64ToFile(anyString(), anyString());
-
-        // S3 업로드 모킹
-        doNothing().when(s3Service).uploadFile(anyString(), anyString(), any(File.class), anyString());
-
-        // URL 생성 모킹
-        doReturn("https://example.com/audio.mp3").when(spyMinutesService).generateFileUrl(anyString(), anyString());
-
-        doReturn("테스트를 위한 회의 내용입니다.").when(spyMinutesService).processFileToText(any(File.class), anyString(), anyString());
+        doReturn("테스트를 위한 회의 내용입니다.").when(spyMinutesService).processFileToText(anyString(), anyString());
 
         when(minutesRepository.save(any(Minutes.class))).thenAnswer(invocation -> {
             Minutes minutes = invocation.getArgument(0);
@@ -118,36 +153,23 @@ class MinutesServiceTest {
         });
 
         // when
-        MinutesFileUploadResponse response = spyMinutesService.uploadFile(base64FileData, fileName, fileType);
+        MinutesFileUploadResponse response = spyMinutesService.createMinutes(filePath);
 
         // then
         assertNotNull(response);
         assertEquals(MinutesType.VOICE, response.getFileType());
         verify(minutesRepository).save(any(Minutes.class));
-        verify(s3Service).uploadFile(eq("minutes_voice"), eq(fileName), any(File.class), eq("audio/mpeg"));
     }
 
     @Test
     @DisplayName("사진 파일 업로드 후 임시 회의록 생성 성공")
     void uploadFile_Picture_Success() {
         // given
-        String base64FileData = "base64Image";
-        String fileName = "image.jpg";
-        MinutesType fileType = MinutesType.PICTURE;
+        String filePath = "minutes_photo/file";
 
         MinutesService spyMinutesService = spy(minutesService);
 
-        // Base64 파일 디코딩 모킹
-        File tempFile = mock(File.class);
-        doReturn(tempFile).when(spyMinutesService).decodeBase64ToFile(anyString(), anyString());
-
-        // S3 업로드 모킹
-        doNothing().when(s3Service).uploadFile(anyString(), anyString(), any(File.class), anyString());
-
-        // URL 생성 모킹
-        doReturn("https://example.com/image.jpg").when(spyMinutesService).generateFileUrl(anyString(), anyString());
-
-        doReturn("테스트를 위한 회의 내용입니다.").when(spyMinutesService).processFileToText(any(File.class), anyString(), anyString());
+        doReturn("테스트를 위한 회의 내용입니다.").when(spyMinutesService).processFileToText(anyString(), anyString());
 
         when(minutesRepository.save(any(Minutes.class))).thenAnswer(invocation -> {
             Minutes minutes = invocation.getArgument(0);
@@ -156,13 +178,12 @@ class MinutesServiceTest {
         });
 
         // when
-        MinutesFileUploadResponse response = spyMinutesService.uploadFile(base64FileData, fileName, fileType);
+        MinutesFileUploadResponse response = spyMinutesService.createMinutes(filePath);
 
         // then
         assertNotNull(response);
         assertEquals(MinutesType.PICTURE, response.getFileType());
         verify(minutesRepository).save(any(Minutes.class));
-        verify(s3Service).uploadFile(eq("minutes_photo"), eq(fileName), any(File.class), eq("image/jpeg"));
     }
 
 
@@ -170,12 +191,10 @@ class MinutesServiceTest {
     @DisplayName("잘못된 파일 타입 업로드 시 예외 발생")
     void uploadFile_InvalidFileType_ThrowsException() {
         // given
-        String validBase64Data = Base64.getEncoder().encodeToString("valid".getBytes());
-        String fileName = "valid.txt";
-        MinutesType fileType = MinutesType.MANUAL; //MANUAL은 파일이 아니거덩요
+        String filePath = "file/path";
 
         // when & then
-        BaseException exception = assertThrows(BaseException.class, () -> minutesService.uploadFile(validBase64Data, fileName, fileType));
+        BaseException exception = assertThrows(BaseException.class, () -> minutesService.createMinutes(filePath));
         assertEquals(MINUTES_TYPE_NOT_FOUND, exception.getStatus());
     }
 
@@ -183,8 +202,7 @@ class MinutesServiceTest {
     @DisplayName("파일 텍스트 변환 성공")
     void processFileToText_Success() {
         // given
-        File tempFile = mock(File.class);
-        String fileName = "audio.mp3";
+        String filePath = "file/path";
         String flaskUrl = "http://localhost:5000/process_audio";
         String expectedResponse = "테스트를 위한 회의 내용입니다.";
 
@@ -195,7 +213,7 @@ class MinutesServiceTest {
         ReflectionTestUtils.setField(minutesService, "flaskServerUrl", flaskUrl);
 
         // when
-        String result = minutesService.processFileToText(tempFile, fileName, flaskUrl);
+        String result = minutesService.processFileToText(filePath ,flaskUrl);
 
         // then
         assertNotNull(result);
@@ -207,46 +225,37 @@ class MinutesServiceTest {
     @DisplayName("파일 텍스트 변환 시 예외 발생")
     void processFileToText_Exception() {
         // given
-        File tempFile = mock(File.class);
-        String fileName = "audio.mp3";
+        String filePath = "file/path";
         String flaskUrl = "http://localhost:5000/process_audio";
 
         when(restTemplate.postForEntity(any(URI.class), any(HttpEntity.class), eq(String.class)))
                 .thenThrow(new RuntimeException());
 
         // when & then
-        BaseException exception = assertThrows(BaseException.class, () -> minutesService.processFileToText(tempFile, fileName, flaskUrl));
-        assertEquals(MINUTES_TEXT_FILE_UPLOAD_ERROR, exception.getStatus());
+        BaseException exception = assertThrows(BaseException.class, () -> minutesService.processFileToText(filePath, flaskUrl));
+        assertEquals(MINUTES_TEXT_SUMMARY_API_CALL_FAILED, exception.getStatus());
     }
 
     @Test
     @DisplayName("음성 파일 업로드 중 예외 발생 시 처리")
     void uploadToS3AndProcessVoice_Exception() {
         // given
-        File tempFile = mock(File.class);
-        String fileName = "audio.mp3";
+        String filePath = "minutes_voice/file";
         Minutes minutes = new Minutes();
 
-        // S3 업로드 중 예외 발생
-        doThrow(new RuntimeException()).when(s3Service).uploadFile(anyString(), anyString(), any(File.class), anyString());
-
         // when & then
-        assertThrows(BaseException.class, () -> minutesService.uploadToS3AndProcessVoice(tempFile, fileName, minutes));
+        assertThrows(BaseException.class, () -> minutesService.processVoice(filePath, minutes));
     }
 
     @Test
     @DisplayName("사진 파일 업로드 중 예외 발생 시 처리")
     void uploadToS3AndProcessPicture_Exception() {
         // given
-        File tempFile = mock(File.class);
-        String fileName = "image.jpg";
+        String filePath = "minutes_photo/file";
         Minutes minutes = new Minutes();
 
-        // S3 업로드 중 예외 발생
-        doThrow(new RuntimeException()).when(s3Service).uploadFile(anyString(), anyString(), any(File.class), anyString());
-
         // when & then
-        assertThrows(BaseException.class, () -> minutesService.uploadToS3AndProcessPicture(tempFile, fileName, minutes));
+        assertThrows(BaseException.class, () -> minutesService.processPicture(filePath, minutes));
     }
 
     @Test
@@ -887,47 +896,47 @@ class MinutesServiceTest {
         verify(nonLeaderProject).getRole();
     }
 
-    @Test
-    @DisplayName("파일 URL 생성 테스트")
-    void generateFileUrl_Success() {
-        // given
-        String directory = "minutes_voice";
-        String fileName = "sample file.mp3";
+//    @Test
+//    @DisplayName("파일 URL 생성 테스트")
+//    void generateFileUrl_Success() {
+//        // given
+//        String directory = "minutes_voice";
+//        String fileName = "sample file.mp3";
+//
+//        // Expected encoded URL
+//        String expectedUrl = "https://kr.object.ncloudstorage.com/logmeet/minutes_voice/sample+file.mp3";
+//
+//        // when
+//        String resultUrl = minutesService.generateFileUrl(directory, fileName);
+//
+//        // then
+//        assertNotNull(resultUrl);
+//        assertEquals(expectedUrl, resultUrl);
+//    }
 
-        // Expected encoded URL
-        String expectedUrl = "https://kr.object.ncloudstorage.com/logmeet/minutes_voice/sample+file.mp3";
+//    @Test
+//    @DisplayName("Base64 디코딩 실패 시 예외 발생")
+//    void decodeBase64ToFile_Base64DecodingError_ThrowsException() {
+//        // given
+//        String invalidBase64Data = "invalid base64";
+//        String fileName = "testfile.txt";
+//
+//        // when & then
+//        BaseException exception = assertThrows(BaseException.class, () -> minutesService.decodeBase64ToFile(invalidBase64Data, fileName));
+//        assertEquals(MINUTES_INVALID_BASE64_DATA, exception.getStatus());
+//    }
 
-        // when
-        String resultUrl = minutesService.generateFileUrl(directory, fileName);
-
-        // then
-        assertNotNull(resultUrl);
-        assertEquals(expectedUrl, resultUrl);
-    }
-
-    @Test
-    @DisplayName("Base64 디코딩 실패 시 예외 발생")
-    void decodeBase64ToFile_Base64DecodingError_ThrowsException() {
-        // given
-        String invalidBase64Data = "invalid base64";
-        String fileName = "testfile.txt";
-
-        // when & then
-        BaseException exception = assertThrows(BaseException.class, () -> minutesService.decodeBase64ToFile(invalidBase64Data, fileName));
-        assertEquals(MINUTES_INVALID_BASE64_DATA, exception.getStatus());
-    }
-
-    @Test
-    @DisplayName("파일 디코딩 중 IOException 발생 시 예외 발생")
-    void decodeBase64ToFile_FileDecodingError_ThrowsException() {
-        // given
-        String validBase64Data = Base64.getEncoder().encodeToString("valid data".getBytes());
-        String fileName = "invalid/testfile.txt";
-
-        // when & then
-        BaseException exception = assertThrows(BaseException.class, () -> minutesService.decodeBase64ToFile(validBase64Data, fileName));
-        assertEquals(S3_FILE_DECODING_ERROR, exception.getStatus());
-    }
+//    @Test
+//    @DisplayName("파일 디코딩 중 IOException 발생 시 예외 발생")
+//    void decodeBase64ToFile_FileDecodingError_ThrowsException() {
+//        // given
+//        String validBase64Data = Base64.getEncoder().encodeToString("valid data".getBytes());
+//        String fileName = "invalid/testfile.txt";
+//
+//        // when & then
+//        BaseException exception = assertThrows(BaseException.class, () -> minutesService.decodeBase64ToFile(validBase64Data, fileName));
+//        assertEquals(S3_FILE_DECODING_ERROR, exception.getStatus());
+//    }
 
     @Test
     @DisplayName("인증되지 않은 사용자 예외 테스트")
