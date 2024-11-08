@@ -1,10 +1,7 @@
 package org.focus.logmeet.service;
 
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import org.focus.logmeet.common.exception.BaseException;
-import org.focus.logmeet.common.response.BaseExceptionResponseStatus;
-import org.junit.jupiter.api.BeforeEach;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,113 +9,61 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.file.Files;
+import java.net.URL;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class S3ServiceTest {
 
-    @Mock
-    private AmazonS3 s3;
-
     @InjectMocks
     private S3Service s3Service;
 
-    private File mockFile;
-
-    @BeforeEach
-    void setUp() {
-        mockFile = mock(File.class);
-    }
+    @Mock
+    private AmazonS3 s3;
 
     @Test
-    @DisplayName("파일 업로드 성공")
-    void uploadFile_Success() throws IOException {
+    @DisplayName("Pre-signed URL 생성 성공 테스트")
+    void generatePreSignedUrl_Success() {
         // given
         String directory = "minutes_voice";
-        String objectName = "test.mp3";
+        String fileName = "sample.mp3";
         String contentType = "audio/mpeg";
-        when(mockFile.length()).thenReturn(100L);
-        FileInputStream mockInputStream = mock(FileInputStream.class);
+        String expectedUrl = "https://mock-s3-url.com/presigned-url";
 
-        S3Service spyS3Service = spy(s3Service);
-        doReturn(mockInputStream).when(spyS3Service).createFileInputStream(mockFile);
+        // 모의 URL 객체 생성
+        URL mockUrl = mock(URL.class);
+        when(mockUrl.toString()).thenReturn(expectedUrl);
+
+        // 모킹 설정
+        when(s3.generatePresignedUrl(any(GeneratePresignedUrlRequest.class))).thenReturn(mockUrl);
 
         // when
-        spyS3Service.uploadFile(directory, objectName, mockFile, contentType);
+        String resultUrl = s3Service.generatePreSignedUrl(directory, fileName, contentType);
 
         // then
-        verify(s3).putObject(any(PutObjectRequest.class));
+        assertNotNull(resultUrl);
+        assertEquals(expectedUrl, resultUrl);
+        verify(s3, times(1)).generatePresignedUrl(any(GeneratePresignedUrlRequest.class));
     }
 
     @Test
-    @DisplayName("파일을 읽는 중 IOException 발생 시 예외 발생")
-    void uploadFile_FileReadError_ThrowsException() throws IOException {
+    @DisplayName("Pre-signed URL 생성 시 예외 발생 테스트")
+    void generatePreSignedUrl_ThrowsException() {
         // given
         String directory = "minutes_voice";
-        String objectName = "test.mp3";
+        String fileName = "sample.mp3";
         String contentType = "audio/mpeg";
 
-        S3Service spyS3Service = spy(s3Service);
-        doThrow(new IOException("File read error")).when(spyS3Service).createFileInputStream(mockFile);
+        // S3 클라이언트에서 예외 발생 모킹
+        when(s3.generatePresignedUrl(any(GeneratePresignedUrlRequest.class)))
+                .thenThrow(new RuntimeException("AWS S3 Error"));
 
         // when & then
-        BaseException exception = assertThrows(BaseException.class,
-                () -> spyS3Service.uploadFile(directory, objectName, mockFile, contentType));
-        assertEquals(BaseExceptionResponseStatus.S3_FILE_UPLOAD_ERROR, exception.getStatus());
-    }
-
-    @Test
-    @DisplayName("S3에 파일 업로드 중 예외 발생")
-    void uploadFile_S3Error_ThrowsException() throws IOException {
-        // given
-        String directory = "minutes_voice";
-        String objectName = "test.mp3";
-        String contentType = "audio/mpeg";
-        when(mockFile.length()).thenReturn(100L);
-        FileInputStream mockInputStream = mock(FileInputStream.class);
-
-        S3Service spyS3Service = spy(s3Service);
-        doReturn(mockInputStream).when(spyS3Service).createFileInputStream(mockFile);
-
-        // S3 업로드 중 예외 발생하도록 모킹
-        doThrow(new RuntimeException("S3 upload error")).when(s3).putObject(any(PutObjectRequest.class));
-
-        // when & then
-        BaseException exception = assertThrows(BaseException.class,
-                () -> spyS3Service.uploadFile(directory, objectName, mockFile, contentType));
-        assertEquals(BaseExceptionResponseStatus.S3_FILE_UPLOAD_ERROR, exception.getStatus());
-    }
-
-    @Test
-    @DisplayName("파일 스트림 생성 성공")
-    void createFileInputStream_Success() throws IOException {
-        // Create a temporary file for testing
-        File tempFile = Files.createTempFile("test", ".txt").toFile();
-        tempFile.deleteOnExit();
-
-        // when
-        FileInputStream result = s3Service.createFileInputStream(tempFile);
-
-        // then
-        assertEquals(FileInputStream.class, result.getClass());
-        result.close();
-    }
-
-    @Test
-    @DisplayName("파일 스트림 생성 시 IOException 발생 시 예외 발생")
-    void createFileInputStream_ThrowsIOException() {
-        // given
-        File nonExistentFile = new File("non-existent-file.txt");
-
-        // when & then
-        IOException exception = assertThrows(IOException.class, () -> s3Service.createFileInputStream(nonExistentFile));
-        assertEquals("non-existent-file.txt (No such file or directory)", exception.getMessage());
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
+                s3Service.generatePreSignedUrl(directory, fileName, contentType));
+        assertEquals("AWS S3 Error", exception.getMessage());
     }
 }
