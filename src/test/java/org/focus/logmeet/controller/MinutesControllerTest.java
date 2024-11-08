@@ -75,16 +75,42 @@ class MinutesControllerTest {
     }
 
     @Test
-    @DisplayName("파일 업로드 요청이 성공적으로 처리됨")
-    void uploadFile() throws Exception {
+    @DisplayName("파일 업로드를 위한 Pre-signed URL 발급 요청이 성공적으로 처리됨")
+    void generatePreSignedUrl() throws Exception {
         // given
-        MinutesFileUploadRequest request = new MinutesFileUploadRequest("base64data", "testfile.mp3", MinutesType.VOICE);
+        String fileName = "fileName";
+        MinutesType fileType = MinutesType.VOICE;
+        PreSignedUrlResponse response = new PreSignedUrlResponse("https://logmeet.kr.object.ncloudstorage.com/test", "file/path");
+
+        when(minutesService.generatePreSignedUrl(any(String.class), any(MinutesType.class)))
+                .thenReturn(response);
+
+        // when & then
+        MvcResult result = mockMvc.perform(get("/minutes/generate-pre-signed-url")
+                        .param("fileName", fileName)
+                        .param("fileType", fileType.toString()))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // then
+        int status = result.getResponse().getStatus();
+        assertThat(status).isEqualTo(200);
+
+        String content = result.getResponse().getContentAsString();
+        assertThat(content).contains("\"success\":true");
+    }
+
+    @Test
+    @DisplayName("파일 경로를 사용한 회의록 생성 요청이 성공적으로 처리됨")
+    void createMinutes() throws Exception {
+        // given
+        MinutesFileUploadRequest request = new MinutesFileUploadRequest("file/path");
         MinutesFileUploadResponse response = new MinutesFileUploadResponse(1L, "file/path", MinutesType.VOICE);
-        when(minutesService.uploadFile(any(String.class), any(String.class), any(MinutesType.class)))
+        when(minutesService.createMinutes(any(String.class)))
                 .thenReturn(response);
 
         // when
-        MvcResult result = mockMvc.perform(post("/minutes/upload-file")
+        MvcResult result = mockMvc.perform(post("/minutes/new")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
