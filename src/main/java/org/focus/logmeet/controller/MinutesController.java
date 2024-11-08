@@ -4,12 +4,11 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.focus.logmeet.common.response.BaseResponse;
 import org.focus.logmeet.controller.dto.minutes.*;
+import org.focus.logmeet.domain.enums.MinutesType;
 import org.focus.logmeet.service.MinutesService;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,15 +34,29 @@ public class MinutesController {
         return new BaseResponse<>(minutesService.updateMinutesInfo(request.getMinutesId(), request.getMinutesName(), request.getProjectId()));
     }
 
-    @Operation(summary = "음성 또는 사진 파일을 업로드하여 회의록을 생성", description = "base64 인코딩된 파일 데이터를 업로드하여 회의록을 생성합니다.")
+    @Operation(summary = "파일 업로드를 위한 Pre-signed URL 발급", description = "파일 업로드를 위한 Pre-signed URL과 파일 경로를 반환합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Pre-signed URL 반환"),
+            @ApiResponse(responseCode = "400", description = "잘못된 파일 타입 요청")
+    })
+    @GetMapping("/generate-pre-signed-url")
+    public BaseResponse<PreSignedUrlResponse> generatePreSignedUrl(
+            @RequestParam String fileName,
+            @RequestParam MinutesType fileType) {
+        PreSignedUrlResponse response = minutesService.generatePreSignedUrl(fileName, fileType);
+        return new BaseResponse<>(response);
+    }
+
+
+    @Operation(summary = "음성 또는 사진 파일이 저장된 path로 회의록을 생성", description = "파일이 저장된 Object Storage의 path를 이용하여 회의록을 생성합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "생성된 회의록 정보 반환")
     })
-    @PostMapping("/upload-file")
-    public BaseResponse<MinutesFileUploadResponse> uploadFile(
+    @PostMapping("/new")
+    public BaseResponse<MinutesFileUploadResponse> createMinutes(
             @RequestBody MinutesFileUploadRequest request) {
-        log.info("파일 업로드 요청: fileName={}, fileType={}", request.getFileName(), request.getFileType());
-        MinutesFileUploadResponse response = minutesService.uploadFile(request.getBase64FileData(), request.getFileName(), request.getFileType());
+        log.info("파일 확인 요청: filePath={}", request.getPath());
+        MinutesFileUploadResponse response = minutesService.createMinutes(request.getPath());
         return new BaseResponse<>(response);
     }
 
