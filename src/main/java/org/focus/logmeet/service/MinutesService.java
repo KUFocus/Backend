@@ -17,23 +17,14 @@ import org.focus.logmeet.repository.UserProjectRepository;
 import org.focus.logmeet.security.annotation.CurrentUser;
 import org.focus.logmeet.security.aspect.CurrentUserHolder;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.*;
-import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.*;
@@ -72,25 +63,57 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
         }
     }
 
+    public PreSignedUrlResponse generatePreSignedUrl(String fileName, MinutesType fileType) {
+        String directory;
+        String contentType;
+
+        // 고유한 파일명 생성
+        String uniqueFileName = UUID.randomUUID() + "_" + fileName;
+
+        if (fileType == MinutesType.VOICE) {
+            directory = "minutes_voice";
+            contentType = "audio/mpeg";
+        } else if (fileType == MinutesType.PICTURE) {
+            directory = "minutes_photo";
+            contentType = "image/jpeg";
+        } else {
+            throw new BaseException(MINUTES_UNSUPPORTED_TYPE);
+        }
+
+        String bucketBaseUrl = "https://kr.object.ncloudstorage.com/logmeet";
+        String filePath = bucketBaseUrl + "/" + directory + "/" + uniqueFileName;
+
+        String preSignedUrl = s3Service.generatePreSignedUrl(directory, uniqueFileName, contentType);
+
+        return new PreSignedUrlResponse(preSignedUrl, filePath);
+    }
+    
     // 파일 업로드 후 임시 회의록 생성
     @Transactional
-    public MinutesFileUploadResponse uploadFile(String base64FileData, String fileName, MinutesType fileType) {
-        log.info("파일 업로드로 임시 회의록 생성 시도: fileType={}", fileType);
+    public MinutesFileUploadResponse createMinutes(String filePath) {
+        log.info("파일 path로 임시 회의록 생성 시도: filePath={}", filePath);
 
         // 새로운 임시 상태의 Minutes 엔티티 생성
         Minutes minutes = new Minutes();
+        MinutesType fileType;
+        if (filePath.contains("minutes_voice")) {
+            fileType = VOICE;
+        } else if (filePath.contains("minutes_photo")) {
+            fileType = PICTURE;
+        } else {
+            fileType = MANUAL;
+        }
         minutes.setType(fileType);
         minutes.setStatus(TEMP);  // 임시 상태로 설정
-
-        File tempFile = decodeBase64ToFile(base64FileData, fileName);
+        minutes.setFilePath(filePath);
 
         switch (fileType) {
             case VOICE:
-                uploadToS3AndProcessVoice(tempFile, fileName, minutes);
+                processVoice(filePath, minutes);
                 break;
 
             case PICTURE:
-                uploadToS3AndProcessPicture(tempFile, fileName, minutes);  // 이미지 처리 수정
+                processPicture(filePath, minutes);  // 이미지 처리 수정
                 break;
 
             default:
@@ -104,67 +127,53 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
         return new MinutesFileUploadResponse(minutes.getId(), minutes.getFilePath(), minutes.getType());
     }
 
-    // 음성 파일을 S3에 업로드 및 Flask 서버에 텍스트 변환 요청 처리
-    protected void uploadToS3AndProcessVoice(File tempFile, String fileName, Minutes minutes) {
+    // 음성 파일을 Flask 서버에 텍스트 변환 요청 처리
+    protected void processVoice(String filePath, Minutes minutes) {
         try {
-            String contentType = "audio/mpeg";
-            String directory = "minutes_voice";
-            s3Service.uploadFile(directory, fileName, tempFile, contentType);
-            String fileUrl = generateFileUrl(directory, fileName);
-            minutes.setFilePath(fileUrl);
-
             String audioProcessingUrl = flaskServerUrl + "/process_audio";
-            String content = processFileToText(tempFile, fileName, audioProcessingUrl);  // 텍스트 변환 요청
+            String content = processFileToText(filePath, audioProcessingUrl);  // 텍스트 변환 요청
             minutes.setContent(content);
         } catch (Exception e) {
-            log.error("음성 파일 업로드 또는 텍스트 처리 중 오류 발생", e);
-            throw new BaseException(MINUTES_VOICE_FILE_UPLOAD_ERROR);
+            log.error("음성 파일 텍스트 처리 중 오류 발생", e);
+            throw new BaseException(MINUTES_FLASK_SERVER_COMMUNICATION_ERROR);
         }
     }
 
-    // 사진 파일을 S3에 업로드 및 Flask 서버에 이미지 텍스트 변환 요청
-    protected void uploadToS3AndProcessPicture(File tempFile, String fileName, Minutes minutes) {
+    // 사진 파일을 Flask 서버에 이미지 텍스트 변환 요청
+    protected void processPicture(String filePath, Minutes minutes) {
         try {
-            String contentType = "image/jpeg";
-            String directory = "minutes_photo";
-            s3Service.uploadFile(directory, fileName, tempFile, contentType);
-            String fileUrl = generateFileUrl(directory, fileName);
-            minutes.setFilePath(fileUrl);
-
             String imageProcessingUrl = flaskServerUrl + "/process_image";
-            String content = processFileToText(tempFile, fileName, imageProcessingUrl); // 이미지 텍스트 변환 요청
+            String content = processFileToText(filePath, imageProcessingUrl); // 이미지 텍스트 변환 요청
             minutes.setContent(content);
         } catch (Exception e) {
             log.error("사진 파일 업로드 또는 텍스트 처리 중 오류 발생", e);
-            throw new BaseException(MINUTES_PHOTO_FILE_UPLOAD_ERROR);
+            throw new BaseException(MINUTES_FLASK_SERVER_COMMUNICATION_ERROR);
         }
     }
 
     // 파일을 Flask 서버에 전송하여 텍스트 변환하는 공통 메서드
-    protected String processFileToText(File tempFile, String fileName, String flaskUrl) {
-        log.info("파일 텍스트 변환 시도: fileName={}, url={}", fileName, flaskUrl); //TODO: 일정 시간 초과 시 통신 종료
+    protected String processFileToText(String filePath, String flaskUrl) {
+        log.info("파일 텍스트 변환 시도: filePath={}, url={}", filePath, flaskUrl); //TODO: 일정 시간 초과 시 통신 종료
 
         try {
-            MultipartBodyBuilder builder = new MultipartBodyBuilder();
-            builder.part("file", new FileSystemResource(tempFile));
-            builder.part("fileName", fileName);
-
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+            headers.setContentType(MediaType.APPLICATION_JSON);
 
-            MultiValueMap<String, HttpEntity<?>> multipartRequest = builder.build();
-            HttpEntity<MultiValueMap<String, HttpEntity<?>>> requestEntity = new HttpEntity<>(multipartRequest, headers);
+            HashMap<String, String> requestBody = new HashMap<>();
+            requestBody.put("filePath", filePath);
+
+            HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
 
             URI uri = UriComponentsBuilder.fromHttpUrl(flaskUrl)
                     .build().toUri();
 
             ResponseEntity<String> response = restTemplate.postForEntity(uri, requestEntity, String.class);
-            log.info("파일 텍스트 변환 성공: fileName={}", fileName);
+            log.info("파일 텍스트 변환 성공: filePath={}", filePath);
             return Objects.requireNonNull(response.getBody());
 
         } catch (Exception e) {
             log.error("파일 텍스트 변환 중 오류 발생", e);
-            throw new BaseException(MINUTES_TEXT_FILE_UPLOAD_ERROR);
+            throw new BaseException(MINUTES_TEXT_SUMMARY_API_CALL_FAILED);
         }
     }
 
@@ -457,34 +466,5 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
 
         minutesRepository.delete(minutes);
         log.info("회의록 삭제 성공: minutesId={}", minutesId);
-    }
-
-    // 파일 이름을 URL 인코딩하여 실제 URL을 생성하는 메서드
-    protected String generateFileUrl(String directory, String fileName) {
-        String baseUrl = "https://kr.object.ncloudstorage.com/logmeet/";
-        // 파일 이름을 URL 인코딩
-        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8); //TODO: 공백을 %20으로 변환할지 고민..
-        return baseUrl + directory + "/" + encodedFileName;
-    }
-
-    // Base64 문자열을 파일로 디코딩하는 메서드
-    protected File decodeBase64ToFile(String base64FileData, String fileName) {
-        try {
-            // Base64 데이터를 디코딩
-            byte[] decodedBytes = Base64.getDecoder().decode(base64FileData);
-
-            // 파일을 임시 디렉터리에 저장
-            File tempFile = new File(System.getProperty("java.io.tmpdir"), fileName);
-            try (FileOutputStream fos = new FileOutputStream(tempFile)) {
-                fos.write(decodedBytes);
-            } catch (IOException e) {
-                log.error("파일 디코딩 중 오류 발생: {}", e.getMessage());
-                throw new BaseException(S3_FILE_DECODING_ERROR);
-            }
-            return tempFile;
-        } catch (IllegalArgumentException e) {
-            log.error("Base64 디코딩 오류: {}", e.getMessage());
-            throw new BaseException(MINUTES_INVALID_BASE64_DATA);
-        }
     }
 }
