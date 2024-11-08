@@ -45,26 +45,17 @@ public enum BaseExceptionResponseStatus implements ResponseStatus {
 
     // Minutes 오류
     MINUTES_NOT_FOUND(false, 6000, "존재하지 않는 회의록입니다.", 404),
-    MINUTES_VOICE_FILE_SAVE_ERROR(false, 6001, "음성 파일 저장 중 오류가 발생했습니다.", 500),
-    MINUTES_VOICE_FILE_UPLOAD_ERROR(false, 6002, "Object Storage에 음성 파일 업로드 중 오류가 발생했습니다.", 500),
-    MINUTES_FLASK_SERVER_COMMUNICATION_ERROR(false, 6003, "Flask 서버와의 통신 중 오류가 발생했습니다.", 500),
-    MINUTES_TEXT_FILE_SAVE_ERROR(false, 6004, "텍스트 파일 저장 중 오류가 발생했습니다.", 500),
-    MINUTES_TEXT_FILE_UPLOAD_ERROR(false, 6005, "Object Storage에 텍스트 파일 업로드 중 오류가 발생했습니다.", 500),
-    MINUTES_PHOTO_FILE_SAVE_ERROR(false, 6006, "사진 파일 저장 중 오류가 발생했습니다.", 500),
-    MINUTES_PHOTO_FILE_UPLOAD_ERROR(false, 6007, "Object Storage에 사진 파일 업로드 중 오류가 발생했습니다.", 500),
-    MINUTES_TYPE_NOT_FOUND(false, 6008, "존재하지 않는 fileType입니다.", 404),
-    MINUTES_TEXT_SUMMARY_ERROR(false, 6009, "텍스트 파일 요약 중 오류가 발생했습니다.", 500),
-    MINUTES_FILE_URL_ENCODING_ERROR(false, 6010, "파일 이름 URL 인코딩 중 오류 발생했습니다.", 500),
-    MINUTES_TEXT_SUMMARY_MISSING(false, 6011, "텍스트 요약 반환값에 요약 정보가 없습니다.", 500),
-    MINUTES_TEXT_SUMMARY_API_CALL_FAILED(false, 6012, "텍스트 요약 API 호출을 실패했습니다.", 500),
-    MINUTES_INVALID_BASE64_DATA(false, 6013, "유효하지 않은 Base64 형식입니다.", 400),
-    MINUTES_INVALID_JSON_FORMAT(false, 6014, "JSON 파싱 중 오류가 발생했습니다.", 500),
-    MINUTES_UNSUPPORTED_TYPE(false, 6015, "지원하지 않는 회의록 타입입니다.", 400),
+    MINUTES_FLASK_SERVER_COMMUNICATION_ERROR(false, 6001, "Flask 서버와의 통신 중 오류가 발생했습니다.", 500),
+    MINUTES_TYPE_NOT_FOUND(false, 6002, "존재하지 않는 fileType입니다.", 404),
+    MINUTES_TEXT_SUMMARY_ERROR(false, 6003, "텍스트 파일 요약 중 오류가 발생했습니다.", 500),
+    MINUTES_FILE_URL_ENCODING_ERROR(false, 6004, "파일 이름 URL 인코딩 중 오류 발생했습니다.", 500),
+    MINUTES_TEXT_SUMMARY_MISSING(false, 6005, "텍스트 요약 반환값에 요약 정보가 없습니다.", 500),
+    MINUTES_TEXT_SUMMARY_API_CALL_FAILED(false, 6006, "텍스트 요약 API 호출을 실패했습니다.", 500),
+    MINUTES_INVALID_JSON_FORMAT(false, 6007, "JSON 파싱 중 오류가 발생했습니다.", 500),
+    MINUTES_UNSUPPORTED_TYPE(false, 6008, "파일 업로드는 VOICE 또는 PICTURE 타입만 허용됩니다.", 400),
 
     // S3 오류
     S3_CLIENT_CREATION_ERROR(false, 7000, "S3 클라이언트 생성 중 오류가 발생했습니다.", 500),
-    S3_FILE_UPLOAD_ERROR(false, 7001, "S3에 파일 업로드 중 오류가 발생했습니다.", 500),
-    S3_FILE_DECODING_ERROR(false, 7002, "파일 디코딩 중 오류가 발생했습니다.", 500),
 
     // Schedule 오류
     SCHEDULE_NOT_FOUND(false, 8000, "존재하지 않는 스케줄입니다.", 404),
