@@ -105,6 +105,7 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
         }
         minutes.setType(fileType);
         minutes.setStatus(TEMP);  // 임시 상태로 설정
+        minutes.setFilePath(filePath);
 
         switch (fileType) {
             case VOICE:
