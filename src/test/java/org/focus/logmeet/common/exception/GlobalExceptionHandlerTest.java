@@ -16,7 +16,9 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.NoHandlerFoundException;
 
+import java.nio.file.AccessDeniedException;
 import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,12 +34,10 @@ class GlobalExceptionHandlerTest {
     private BindingResult bindingResult;
 
     private MockHttpServletRequest request;
-    private MockHttpServletResponse response;
 
     @BeforeEach
     void setUp() {
         request = new MockHttpServletRequest();
-        response = new MockHttpServletResponse();
     }
 
     @Test
@@ -75,6 +75,36 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    @DisplayName("NoHandlerFoundException 예외 처리")
+    void handleNotFoundException() {
+        // given
+        NoHandlerFoundException ex = new NoHandlerFoundException("GET", "/non-existing-path", null);
+        WebRequest webRequest = new ServletWebRequest(request);
+
+        // when
+        BaseResponse<Void> response = globalExceptionHandler.handleNotFound(ex, webRequest);
+
+        // then
+        assertThat(response.getCode()).isEqualTo(BaseExceptionResponseStatus.NOT_FOUND.getCode());
+        assertThat(response.getMessage()).isEqualTo(BaseExceptionResponseStatus.NOT_FOUND.getMessage());
+    }
+
+    @Test
+    @DisplayName("AccessDeniedException 예외 처리")
+    void handleAccessDeniedException() {
+        // given
+        AccessDeniedException ex = new AccessDeniedException("Access Denied");
+        WebRequest webRequest = new ServletWebRequest(request);
+
+        // when
+        BaseResponse<Void> response = globalExceptionHandler.handleAccessDenied(ex, webRequest);
+
+        // then
+        assertThat(response.getCode()).isEqualTo(BaseExceptionResponseStatus.FORBIDDEN.getCode());
+        assertThat(response.getMessage()).isEqualTo(BaseExceptionResponseStatus.FORBIDDEN.getMessage());
+    }
+
+    @Test
     @DisplayName("Exception 예외 처리")
     void handleAllExceptions() {
         // given
@@ -82,10 +112,10 @@ class GlobalExceptionHandlerTest {
         WebRequest webRequest = new ServletWebRequest(request);
 
         // when
-//        BaseResponse<Void> response = globalExceptionHandler.handleAllExceptions(ex, webRequest);
+        BaseResponse<Void> response = globalExceptionHandler.handleAllExceptions(ex, webRequest);
 
-//        // then
-//        assertThat(response.getCode()).isEqualTo(BaseExceptionResponseStatus.SERVER_ERROR.getCode());
-//        assertThat(response.getMessage()).isEqualTo(BaseExceptionResponseStatus.SERVER_ERROR.getMessage());
+        // then
+        assertThat(response.getCode()).isEqualTo(BaseExceptionResponseStatus.SERVER_ERROR.getCode());
+        assertThat(response.getMessage()).isEqualTo(BaseExceptionResponseStatus.SERVER_ERROR.getMessage());
     }
 }
