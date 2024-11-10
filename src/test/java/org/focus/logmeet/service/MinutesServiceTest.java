@@ -61,13 +61,97 @@ class MinutesServiceTest {
     private User mockUser;
     private Project mockProject;
     private Minutes mockMinutes;
+    Minutes minutes = new Minutes();
+
 
     @BeforeEach
     void setUp() {
+        minutes.setName("테스트 회의록");
+        minutes.setContent("테스트 회의록 내용입니다.");
+        minutes.setSummary("테스트 회의록 요약본입니다.");
+        minutes.setStatus(Status.ACTIVE);
         mockUser = mock(User.class);
         mockProject = mock(Project.class);
         mockMinutes = mock(Minutes.class);
         CurrentUserHolder.set(mockUser);
+    }
+
+    @Test
+    @DisplayName("Minutes 객체 생성 테스트 (빌더 패턴)")
+    void createMinutes_WithBuilder_Success() {
+        // given
+        Project project = new Project();
+        String name = "테스트 회의록";
+        String content = "테스트 회의록 내용입니다.";
+        String summary = "테스트 회의록 요약본입니다.";
+        Status status = Status.ACTIVE;
+        MinutesType type = MinutesType.VOICE;
+        String filePath = "test/file/path";
+
+        // when
+        Minutes minutes = Minutes.builder()
+                .name(name)
+                .content(content)
+                .summary(summary)
+                .status(status)
+                .type(type)
+                .filePath(filePath)
+                .project(project)
+                .build();
+
+        // then
+        assertNotNull(minutes);
+        assertEquals(name, minutes.getName());
+        assertEquals(content, minutes.getContent());
+        assertEquals(summary, minutes.getSummary());
+        assertEquals(status, minutes.getStatus());
+        assertEquals(type, minutes.getType());
+        assertEquals(filePath, minutes.getFilePath());
+        assertEquals(project, minutes.getProject());
+    }
+
+    @Test
+    @DisplayName("회의록 이름 필드 설정 및 반환 테스트")
+    void nameFieldTest() {
+        // when
+        String name = minutes.getName();
+
+        // then
+        assertNotNull(name);
+        assertEquals("테스트 회의록", name);
+    }
+
+    @Test
+    @DisplayName("회의록 내용 필드 설정 및 반환 테스트")
+    void contentFieldTest() {
+        // when
+        String content = minutes.getContent();
+
+        // then
+        assertNotNull(content);
+        assertEquals("테스트 회의록 내용입니다.", content);
+    }
+
+    @Test
+    @DisplayName("회의록 요약 필드 설정 및 반환 테스트")
+    void summaryFieldTest() {
+        // when
+        String summary = minutes.getSummary();
+
+        // then
+        assertNotNull(summary);
+        assertEquals("테스트 회의록 요약본입니다.", summary);
+    }
+
+    @Test
+    @DisplayName("회의록 상태 필드 기본값 테스트")
+    void statusFieldDefaultTest() {
+        // when
+        Status status = minutes.getStatus();
+
+        // then
+        assertNotNull(status);
+        assertEquals(Status.ACTIVE, status);
     }
 
     @Test
