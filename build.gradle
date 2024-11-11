@@ -23,7 +23,7 @@ tasks.jacocoTestReport {
 		xml.required = false
 		csv.required = false
 		html.required = true
-		html.outputLocation = layout.buildDirectory.dir('reports/jacoco/test')
+		html.outputLocation = layout.buildDirectory.dir('reports/jacoco/html')
 	}
 	classDirectories.setFrom(fileTree(dir: 'build/classes/java/main', include: '**/org/focus/**'))
 }
