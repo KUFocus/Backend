@@ -153,7 +153,7 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
 
     // 파일을 Flask 서버에 전송하여 텍스트 변환하는 공통 메서드
     protected String processFileToText(String filePath, String flaskUrl) {
-        log.info("파일 텍스트 변환 시도: filePath={}, url={}", filePath, flaskUrl); //TODO: 일정 시간 초과 시 통신 종료
+        log.info("파일 텍스트 변환 시도: filePath={}, url={}", filePath, flaskUrl); //TODO: 일정 시간 초과 및 파일 크기에 따라 종료
 
         try {
             HttpHeaders headers = new HttpHeaders();
