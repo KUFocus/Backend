@@ -34,11 +34,14 @@ jobs:
       - name: Build without tests
         run: ./gradlew build -x test
 
-      - name: Run Tests
-        run: ./gradlew test
+      - name: Run Tests and Generate JaCoCo Report
+        run: ./gradlew test jacocoTestReport
 
-      - name: Generate JaCoCo Report
-        run: ./gradlew jacocoTestReport
+      - name: Upload JaCoCo Report
+        uses: actions/upload-artifact@v2
+        with:
+          name: jacoco-report
+          path: build/reports/jacoco/test/html
 
       - name: Code Quality Check - PMD
         run: ./gradlew pmdMain
