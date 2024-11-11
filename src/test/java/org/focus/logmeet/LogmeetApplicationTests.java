@@ -12,12 +12,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 @SpringBootTest
 class LogmeetApplicationTests {
-
-	@Test
-	@DisplayName("애플리케이션 컨텍스트가 성공적으로 로드된다")
-	void contextLoads() {
-	}
-
 	@Test
 	@DisplayName("애플리케이션 메인 메서드 호출 테스트")
 	void mainMethodTest() {

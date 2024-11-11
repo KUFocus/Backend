@@ -141,9 +141,9 @@ class ProjectServiceTest {
 
         //JPA라 직접 ID 생성해줘야함
         doAnswer(invocation -> {
-            Project project = invocation.getArgument(0);
-            project.setId(1L);
-            return project;
+            Project testProject = invocation.getArgument(0);
+            testProject.setId(1L);
+            return testProject;
         }).when(projectRepository).save(any(Project.class));
 
         when(userProjectRepository.save(any(UserProject.class))).thenReturn(mock(UserProject.class));

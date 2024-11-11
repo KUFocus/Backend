@@ -221,17 +221,17 @@ class AuthServiceTest {
         //given
         String email = "test@example.com";
         String refreshToken = "newRefreshToken";
-        AuthLoginRequest loginRequest = new AuthLoginRequest(email, "password123");
+        AuthLoginRequest request = new AuthLoginRequest(email, "password123");
         User user = User.builder().email(email).password("encodedPassword").build();
-        JwtTokenDto tokenDto = new JwtTokenDto("accessToken", refreshToken);
+        JwtTokenDto token = new JwtTokenDto("accessToken", refreshToken);
 
         when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
-        when(jwtProvider.createAllToken(anyString())).thenReturn(tokenDto);
+        when(jwtProvider.createAllToken(anyString())).thenReturn(token);
         when(refreshTokenRepository.findByUserEmail(anyString())).thenReturn(Optional.empty());
 
         //when
-        authService.login(loginRequest);
+        authService.login(request);
 
         //then
         verify(refreshTokenRepository, times(1)).save(any(RefreshToken.class));
@@ -243,18 +243,18 @@ class AuthServiceTest {
         //given
         String email = "test@example.com";
         String refreshToken = "newRefreshToken";
-        AuthLoginRequest loginRequest = new AuthLoginRequest(email, "password123");
+        AuthLoginRequest request = new AuthLoginRequest(email, "password123");
         User user = User.builder().email(email).password("encodedPassword").build();
-        JwtTokenDto tokenDto = new JwtTokenDto("accessToken", refreshToken);
+        JwtTokenDto token = new JwtTokenDto("accessToken", refreshToken);
         RefreshToken existingToken = new RefreshToken(null, "oldToken", email, LocalDateTime.now().plusDays(1));
 
         when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
-        when(jwtProvider.createAllToken(anyString())).thenReturn(tokenDto);
+        when(jwtProvider.createAllToken(anyString())).thenReturn(token);
         when(refreshTokenRepository.findByUserEmail(anyString())).thenReturn(Optional.of(existingToken));
 
         //when
-        authService.login(loginRequest);
+        authService.login(request);
 
         //then
         verify(refreshTokenRepository, times(1)).save(existingToken);

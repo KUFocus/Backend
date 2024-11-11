@@ -181,18 +181,18 @@ class ScheduleServiceTest {
     @DisplayName("유저의 월별 스케줄 조회 성공")
     void getScheduleOfUser_Success() {
         // given
-        User mockUser = mock(User.class);
+        User testMockUser = mock(User.class);
         LocalDate yearMonth = LocalDate.of(2024, 10, 1);
         int year = yearMonth.getYear();
         int month = yearMonth.getMonthValue();
 
-        CurrentUserHolder.set(mockUser); // 현재 유저 설정
-        when(mockUser.getId()).thenReturn(1L);
-        when(scheduleRepository.findSchedulesByUserIdAndMonth(mockUser.getId(), year, month)).thenReturn(List.of(mockSchedule));
+        CurrentUserHolder.set(testMockUser); // 현재 유저 설정
+        when(testMockUser.getId()).thenReturn(1L);
+        when(scheduleRepository.findSchedulesByUserIdAndMonth(testMockUser.getId(), year, month)).thenReturn(List.of(mockSchedule));
         when(mockSchedule.getScheduleDate()).thenReturn(LocalDateTime.of(2024, 10, 5, 10, 0));
         when(mockSchedule.getProject()).thenReturn(mockProject);
         when(mockProject.getUserProjects()).thenReturn(List.of(mockUserProject));
-        when(mockUserProject.getUser()).thenReturn(mockUser);
+        when(mockUserProject.getUser()).thenReturn(testMockUser);
         when(mockUserProject.getColor()).thenReturn(PROJECT_1);
 
         // when
@@ -224,7 +224,6 @@ class ScheduleServiceTest {
         // given
         Long scheduleId = 1L;
         Long projectId = 1L;
-        User mockUser = mock(User.class);
 
         when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(mockSchedule));
         when(mockSchedule.getProject()).thenReturn(mockProject);
@@ -259,7 +258,7 @@ class ScheduleServiceTest {
         Long scheduleId = 1L;
         Long projectId = 1L;
         ScheduleUpdateRequest request = new ScheduleUpdateRequest("Updated Meeting", LocalDateTime.now());
-        User mockUser = mock(User.class);
+        User testMockUser = mock(User.class);
 
         when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(mockSchedule));
         when(mockSchedule.getProject()).thenReturn(mockProject);
@@ -267,8 +266,8 @@ class ScheduleServiceTest {
         when(projectRepository.findById(projectId)).thenReturn(Optional.of(mockProject));
         when(userProjectRepository.findByUserAndProject(any(), any())).thenReturn(Optional.of(mockUserProject));
         when(mockUserProject.getRole()).thenReturn(Role.MEMBER);
-        when(mockUserProject.getUser()).thenReturn(mockUser);
-        when(mockUser.getId()).thenReturn(1L);
+        when(mockUserProject.getUser()).thenReturn(testMockUser);
+        when(testMockUser.getId()).thenReturn(1L);
 
         // when & then
         BaseException exception = assertThrows(BaseException.class, () -> scheduleService.updateSchedule(scheduleId, request));
@@ -310,7 +309,7 @@ class ScheduleServiceTest {
         // given
         Long scheduleId = 1L;
         Long projectId = 1L;
-        User mockUser = mock(User.class);
+        User testMockUser = mock(User.class);
 
         when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(mockSchedule));
         when(mockSchedule.getProject()).thenReturn(mockProject);
@@ -318,8 +317,8 @@ class ScheduleServiceTest {
         when(projectRepository.findById(projectId)).thenReturn(Optional.of(mockProject));
         when(userProjectRepository.findByUserAndProject(any(), any())).thenReturn(Optional.of(mockUserProject));
         when(mockUserProject.getRole()).thenReturn(Role.MEMBER); // 리더가 아님
-        when(mockUserProject.getUser()).thenReturn(mockUser);
-        when(mockUser.getId()).thenReturn(1L);
+        when(mockUserProject.getUser()).thenReturn(testMockUser);
+        when(testMockUser.getId()).thenReturn(1L);
 
         // when & then
         BaseException exception = assertThrows(BaseException.class, () -> scheduleService.deleteSchedule(scheduleId));
