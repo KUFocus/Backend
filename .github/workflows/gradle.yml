@@ -41,7 +41,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: jacoco-report
-          path: build/reports/jacoco/html
+          path: build/reports/jacoco/html/**
           if-no-files-found: warn
 
       - name: Code Quality Check - PMD
