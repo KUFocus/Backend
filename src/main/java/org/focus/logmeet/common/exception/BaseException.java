@@ -5,7 +5,7 @@ import org.focus.logmeet.common.response.BaseExceptionResponseStatus;
 
 @Getter
 public class BaseException extends RuntimeException {
-    public BaseExceptionResponseStatus status;
+    private final BaseExceptionResponseStatus status;
 
     public BaseException(BaseExceptionResponseStatus status) {
         super(status.getMessage());

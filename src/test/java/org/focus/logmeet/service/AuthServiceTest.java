@@ -258,6 +258,6 @@ class AuthServiceTest {
 
         //then
         verify(refreshTokenRepository, times(1)).save(existingToken);
-        assertThat(existingToken.getRefreshToken()).isEqualTo(refreshToken);
+        assertThat(existingToken.getToken()).isEqualTo(refreshToken);
     }
 }

@@ -39,7 +39,7 @@ public class AuthController {
             @ApiResponse(responseCode = "200", description = "회원 가입 성공",
                     content = @Content(schema = @Schema(implementation = AuthSignupResponse.class)))
     })
-    @PostMapping("/signup") //TODO: 이메일 검증 로직 고려
+    @PostMapping("/signup")
     public BaseResponse<AuthSignupResponse> signup(
             @Validated @RequestBody AuthSignupRequest request,
             BindingResult bindingResult) {

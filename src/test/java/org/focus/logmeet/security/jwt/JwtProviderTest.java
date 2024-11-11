@@ -262,7 +262,7 @@ class JwtProviderTest {
         String refreshToken = jwtProvider.createToken(email, "Refresh");
         RefreshToken refreshTokenEntity = new RefreshToken();
         refreshTokenEntity.setUserEmail(email);
-        refreshTokenEntity.setRefreshToken(refreshToken);
+        refreshTokenEntity.setToken(refreshToken);
 
         when(refreshTokenRepository.findByUserEmail(anyString())).thenReturn(Optional.of(refreshTokenEntity));
 
@@ -297,7 +297,7 @@ class JwtProviderTest {
         // 리프레시 토큰이 저장된 값과 다르게 설정
         RefreshToken refreshTokenEntity = new RefreshToken();
         refreshTokenEntity.setUserEmail(email);
-        refreshTokenEntity.setRefreshToken(storedRefreshToken); // 다른 리프레시 토큰 설정
+        refreshTokenEntity.setToken(storedRefreshToken); // 다른 리프레시 토큰 설정
 
         lenient().when(refreshTokenRepository.findByUserEmail(anyString())).thenReturn(Optional.of(refreshTokenEntity));
 

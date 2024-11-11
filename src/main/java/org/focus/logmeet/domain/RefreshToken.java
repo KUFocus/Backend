@@ -22,14 +22,14 @@ public class RefreshToken extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String refreshToken;
+    private String token;
 
     private String userEmail;
 
     private LocalDateTime expirationDate;
 
     public void updateToken(String token, LocalDateTime expirationDate) {
-        this.refreshToken = token;
+        this.token = token;
         this.expirationDate = expirationDate;
     }
 }

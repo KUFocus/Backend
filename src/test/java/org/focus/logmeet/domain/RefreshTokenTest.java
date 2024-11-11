@@ -5,7 +5,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.LocalDateTime;
 
@@ -26,7 +25,7 @@ class RefreshTokenTest {
     void testRefreshTokenCreation() {
         assertNotNull(refreshToken);
         assertEquals(1L, refreshToken.getId());
-        assertEquals("refreshTokenValue", refreshToken.getRefreshToken());
+        assertEquals("refreshTokenValue", refreshToken.getToken());
         assertEquals("test@example.com", refreshToken.getUserEmail());
         assertNotNull(refreshToken.getExpirationDate());
     }
@@ -43,8 +42,8 @@ class RefreshTokenTest {
     @Test
     @DisplayName("RefreshToken 필드 값 수정 테스트")
     void testRefreshTokenFieldUpdate() {
-        refreshToken.setRefreshToken("newTokenValue");
+        refreshToken.setToken("newTokenValue");
 
-        assertEquals("newTokenValue", refreshToken.getRefreshToken());
+        assertEquals("newTokenValue", refreshToken.getToken());
     }
 }
