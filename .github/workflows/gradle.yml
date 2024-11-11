@@ -12,14 +12,6 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
-    env:
-      DB_URL: ${{ secrets.DB_URL }}
-      DB_USERNAME: ${{ secrets.DB_USERNAME }}
-      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      NCLOUD_ACCESS_KEY: ${{ secrets.NCLOUD_ACCESS_KEY }}
-      NCLOUD_SECRET_KEY: ${{ secrets.NCLOUD_SECRET_KEY }}
-      JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
-
     steps:
       - name: Check out code
         uses: actions/checkout@v2
@@ -29,6 +21,15 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
+
+      - name: Set environment variables
+        run: |
+          echo "DB_URL=${{ secrets.DB_URL }}" >> $GITHUB_ENV
+          echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> $GITHUB_ENV
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> $GITHUB_ENV
+          echo "NCLOUD_ACCESS_KEY=${{ secrets.NCLOUD_ACCESS_KEY }}" >> $GITHUB_ENV
+          echo "NCLOUD_SECRET_KEY=${{ secrets.NCLOUD_SECRET_KEY }}" >> $GITHUB_ENV
+          echo "JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}" >> $GITHUB_ENV
 
       - name: Build without tests
         run: ./gradlew build -x test
