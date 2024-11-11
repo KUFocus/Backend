@@ -3,6 +3,8 @@ plugins {
 	id 'org.springframework.boot' version '3.2.5'
 	id 'io.spring.dependency-management' version '1.1.4'
 	id 'jacoco'
+	id 'pmd'
+	id 'com.github.spotbugs' version '5.0.14'
 }
 
 group = 'org.focus'
@@ -21,6 +23,7 @@ tasks.jacocoTestReport {
 		xml.required = false
 		csv.required = false
 		html.required = true
+		html.outputLocation = layout.buildDirectory.dir('reports/jacoco/test')
 	}
 	classDirectories.setFrom(fileTree(dir: 'build/classes/java/main', include: '**/org/focus/**'))
 }
@@ -43,6 +46,19 @@ tasks.jacocoTestCoverageVerification {
 }
 
 check.dependsOn(tasks.jacocoTestCoverageVerification)
+
+pmd {
+	toolVersion = '7.7.0'
+	ruleSets = ['java-basic', 'java-design']
+	ignoreFailures = true
+}
+
+spotbugs {
+	toolVersion = "4.8.6"
+	ignoreFailures = true
+	effort = "max"
+	reportLevel = "high"
+}
 
 configurations {
 	compileOnly {
