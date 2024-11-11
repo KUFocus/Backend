@@ -12,6 +12,14 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
+    env:
+      DB_URL: ${{ secrets.DB_URL }}
+      DB_USERNAME: ${{ secrets.DB_USERNAME }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      NCLOUD_ACCESS_KEY: ${{ secrets.NCLOUD_ACCESS_KEY }}
+      NCLOUD_SECRET_KEY: ${{ secrets.NCLOUD_SECRET_KEY }}
+      JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+
     steps:
       - name: Check out code
         uses: actions/checkout@v2
@@ -22,27 +30,11 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Set environment variables
-        env:
-          DB_URL: ${{ secrets.DB_URL }}
-          DB_USERNAME: ${{ secrets.DB_USERNAME }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          NCLOUD_ACCESS_KEY: ${{ secrets.NCLOUD_ACCESS_KEY }}
-          NCLOUD_SECRET_KEY: ${{ secrets.NCLOUD_SECRET_KEY }}
-          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
-
       - name: Build with Gradle
         run: ./gradlew build
 
       - name: Run Tests
         run: ./gradlew test
-        env:
-          SPRING_DATASOURCE_URL: ${{ secrets.DB_URL }}
-          SPRING_DATASOURCE_USERNAME: ${{ secrets.DB_USERNAME }}
-          SPRING_DATASOURCE_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          CLOUD_NAVER_CREDENTIALS_ACCESSKEY: ${{ secrets.NCLOUD_ACCESS_KEY }}
-          CLOUD_NAVER_CREDENTIALS_SECRETKEY: ${{ secrets.NCLOUD_SECRET_KEY }}
-          SECRET_JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
 
       - name: Generate JaCoCo Report
         run: ./gradlew jacocoTestReport
