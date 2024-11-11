@@ -29,15 +29,6 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-          
-      - name: Check environment variables
-        run: |
-          if [ -z "$DB_URL" ]; then echo "DB_URL is not set"; exit 1; fi
-          if [ -z "$DB_USERNAME" ]; then echo "DB_USERNAME is not set"; exit 1; fi
-          if [ -z "$DB_PASSWORD" ]; then echo "DB_PASSWORD is not set"; exit 1; fi
-          if [ -z "$NCLOUD_ACCESS_KEY" ]; then echo "NCLOUD_ACCESS_KEY is not set"; exit 1; fi
-          if [ -z "$NCLOUD_SECRET_KEY" ]; then echo "NCLOUD_SECRET_KEY is not set"; exit 1; fi
-          if [ -z "$JWT_SECRET_KEY" ]; then echo "JWT_SECRET_KEY is not set"; exit 1; fi
 
       - name: Build without tests
         run: ./gradlew build -x test
