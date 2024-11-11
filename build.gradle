@@ -13,7 +13,6 @@ java {
 
 jacoco {
 	toolVersion = "0.8.8"
-	reportsDirectory = layout.buildDirectory.dir("customJacocoReportDir")
 }
 
 tasks.jacocoTestReport {
@@ -21,9 +20,11 @@ tasks.jacocoTestReport {
 	reports {
 		xml.required = false
 		csv.required = false
-		html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
+		html.required = true
 	}
 }
+
+check.dependsOn(tasks.jacocoTestCoverageVerification)
 
 tasks.jacocoTestCoverageVerification {
 	violationRules {
