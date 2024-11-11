@@ -2,13 +2,14 @@ package org.focus.logmeet.service;
 
 import org.focus.logmeet.common.exception.BaseException;
 import org.focus.logmeet.controller.dto.project.*;
-import org.focus.logmeet.domain.Project;
-import org.focus.logmeet.domain.User;
-import org.focus.logmeet.domain.UserProject;
+import org.focus.logmeet.domain.*;
 import org.focus.logmeet.domain.enums.ProjectColor;
+import org.focus.logmeet.domain.enums.Role;
+import org.focus.logmeet.domain.enums.Status;
 import org.focus.logmeet.repository.ProjectRepository;
 import org.focus.logmeet.repository.UserProjectRepository;
 import org.focus.logmeet.security.aspect.CurrentUserHolder;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,6 +38,99 @@ class ProjectServiceTest {
     @InjectMocks
     private ProjectService projectService;
 
+    private Project project;
+    @BeforeEach
+    void setUp() {
+        project = Project.builder()
+                .name("테스트 프로젝트")
+                .content("테스트 프로젝트입니다.")
+                .build();
+    }
+
+    @Test
+    @DisplayName("userProjects 필드 초기화 테스트")
+    void userProjectsInitializationTest() {
+        // given
+        UserProject userProject = UserProject.builder()
+                .role(Role.MEMBER)
+                .project(project)
+                .build();
+        project.setUserProjects(List.of(userProject));
+
+        // when
+        List<UserProject> userProjects = project.getUserProjects();
+
+        // then
+        assertNotNull(userProjects);
+        assertEquals(1, userProjects.size());
+        assertEquals(userProject, userProjects.get(0));
+    }
+
+    @Test
+    @DisplayName("schedules 필드 초기화 테스트")
+    void schedulesInitializationTest() {
+        // given
+        Schedule schedule = new Schedule();
+        project.setSchedules(List.of(schedule));
+
+        // when
+        List<Schedule> schedules = project.getSchedules();
+
+        // then
+        assertNotNull(schedules);
+        assertEquals(1, schedules.size());
+        assertEquals(schedule, schedules.get(0));
+    }
+
+    @Test
+    @DisplayName("minutes 필드 초기화 테스트")
+    void minutesInitializationTest() {
+        // given
+        Minutes minutes = new Minutes();
+        project.setMinutes(List.of(minutes));
+
+        // when
+        List<Minutes> minutesList = project.getMinutes();
+
+        // then
+        assertNotNull(minutesList);
+        assertEquals(1, minutesList.size());
+        assertEquals(minutes, minutesList.get(0));
+    }
+
+    @Test
+    @DisplayName("name 필드 값 설정 및 검증")
+    void nameFieldTest() {
+        // when
+        String name = project.getName();
+
+        // then
+        assertNotNull(name);
+        assertEquals("테스트 프로젝트", name);
+    }
+
+    @Test
+    @DisplayName("content 필드 값 설정 및 검증")
+    void contentFieldTest() {
+        // when
+        String content = project.getContent();
+
+        // then
+        assertNotNull(content);
+        assertEquals("테스트 프로젝트입니다.", content);
+    }
+
+    @Test
+    @DisplayName("status 필드 기본값 검증")
+    void statusFieldDefaultTest() {
+        // when
+        Status status = project.getStatus();
+
+        // then
+        assertNotNull(status);
+        assertEquals(Status.ACTIVE, status);
+    }
+
     @Test
     @DisplayName("프로젝트 생성 성공")
     void createProject_Success() {
@@ -47,9 +141,9 @@ class ProjectServiceTest {
 
         //JPA라 직접 ID 생성해줘야함
         doAnswer(invocation -> {
-            Project project = invocation.getArgument(0);
-            project.setId(1L);
-            return project;
+            Project testProject = invocation.getArgument(0);
+            testProject.setId(1L);
+            return testProject;
         }).when(projectRepository).save(any(Project.class));
 
         when(userProjectRepository.save(any(UserProject.class))).thenReturn(mock(UserProject.class));

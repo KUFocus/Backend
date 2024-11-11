@@ -24,7 +24,7 @@ public class User extends BaseTimeEntity {
     private Long id;
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<UserProject> UserProjects;
+    private List<UserProject> userProjects;
 
     @Column(length = 50, nullable = false, unique = true)
     private String email;

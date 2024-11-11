@@ -61,13 +61,97 @@ class MinutesServiceTest {
     private User mockUser;
     private Project mockProject;
     private Minutes mockMinutes;
+    Minutes minutes = new Minutes();
+
 
     @BeforeEach
     void setUp() {
+        minutes.setName("테스트 회의록");
+        minutes.setContent("테스트 회의록 내용입니다.");
+        minutes.setSummary("테스트 회의록 요약본입니다.");
+        minutes.setStatus(Status.ACTIVE);
         mockUser = mock(User.class);
         mockProject = mock(Project.class);
         mockMinutes = mock(Minutes.class);
         CurrentUserHolder.set(mockUser);
+    }
+
+    @Test
+    @DisplayName("Minutes 객체 생성 테스트 (빌더 패턴)")
+    void createMinutes_WithBuilder_Success() {
+        // given
+        Project project = new Project();
+        String name = "테스트 회의록";
+        String content = "테스트 회의록 내용입니다.";
+        String summary = "테스트 회의록 요약본입니다.";
+        Status status = Status.ACTIVE;
+        MinutesType type = MinutesType.VOICE;
+        String filePath = "test/file/path";
+
+        // when
+        Minutes builtMinutes = Minutes.builder()
+                .name(name)
+                .content(content)
+                .summary(summary)
+                .status(status)
+                .type(type)
+                .filePath(filePath)
+                .project(project)
+                .build();
+
+        // then
+        assertNotNull(builtMinutes);
+        assertEquals(name, builtMinutes.getName());
+        assertEquals(content, builtMinutes.getContent());
+        assertEquals(summary, builtMinutes.getSummary());
+        assertEquals(status, builtMinutes.getStatus());
+        assertEquals(type, builtMinutes.getType());
+        assertEquals(filePath, builtMinutes.getFilePath());
+        assertEquals(project, builtMinutes.getProject());
+    }
+
+    @Test
+    @DisplayName("회의록 이름 필드 설정 및 반환 테스트")
+    void nameFieldTest() {
+        // when
+        String name = minutes.getName();
+
+        // then
+        assertNotNull(name);
+        assertEquals("테스트 회의록", name);
+    }
+
+    @Test
+    @DisplayName("회의록 내용 필드 설정 및 반환 테스트")
+    void contentFieldTest() {
+        // when
+        String content = minutes.getContent();
+
+        // then
+        assertNotNull(content);
+        assertEquals("테스트 회의록 내용입니다.", content);
+    }
+
+    @Test
+    @DisplayName("회의록 요약 필드 설정 및 반환 테스트")
+    void summaryFieldTest() {
+        // when
+        String summary = minutes.getSummary();
+
+        // then
+        assertNotNull(summary);
+        assertEquals("테스트 회의록 요약본입니다.", summary);
+    }
+
+    @Test
+    @DisplayName("회의록 상태 필드 기본값 테스트")
+    void statusFieldDefaultTest() {
+        // when
+        Status status = minutes.getStatus();
+
+        // then
+        assertNotNull(status);
+        assertEquals(Status.ACTIVE, status);
     }
 
     @Test
@@ -147,9 +231,9 @@ class MinutesServiceTest {
         doReturn("테스트를 위한 회의 내용입니다.").when(spyMinutesService).processFileToText(anyString(), anyString());
 
         when(minutesRepository.save(any(Minutes.class))).thenAnswer(invocation -> {
-            Minutes minutes = invocation.getArgument(0);
-            minutes.setId(1L);
-            return minutes;
+            Minutes testMinutes = invocation.getArgument(0);
+            testMinutes.setId(1L);
+            return testMinutes;
         });
 
         // when
@@ -172,9 +256,9 @@ class MinutesServiceTest {
         doReturn("테스트를 위한 회의 내용입니다.").when(spyMinutesService).processFileToText(anyString(), anyString());
 
         when(minutesRepository.save(any(Minutes.class))).thenAnswer(invocation -> {
-            Minutes minutes = invocation.getArgument(0);
-            minutes.setId(2L);
-            return minutes;
+            Minutes testMinutes = invocation.getArgument(0);
+            testMinutes.setId(2L);
+            return testMinutes;
         });
 
         // when
@@ -241,10 +325,10 @@ class MinutesServiceTest {
     void uploadToS3AndProcessVoice_Exception() {
         // given
         String filePath = "minutes_voice/file";
-        Minutes minutes = new Minutes();
+        Minutes testMinutes = new Minutes();
 
         // when & then
-        assertThrows(BaseException.class, () -> minutesService.processVoice(filePath, minutes));
+        assertThrows(BaseException.class, () -> minutesService.processVoice(filePath, testMinutes));
     }
 
     @Test
@@ -252,10 +336,10 @@ class MinutesServiceTest {
     void uploadToS3AndProcessPicture_Exception() {
         // given
         String filePath = "minutes_photo/file";
-        Minutes minutes = new Minutes();
+        Minutes testMinutes = new Minutes();
 
         // when & then
-        assertThrows(BaseException.class, () -> minutesService.processPicture(filePath, minutes));
+        assertThrows(BaseException.class, () -> minutesService.processPicture(filePath, testMinutes));
     }
 
     @Test
@@ -264,8 +348,6 @@ class MinutesServiceTest {
         // given
         Long minutesId = 1L;
         String extractedText = "테스트를 위한 회의 내용입니다.";
-        Minutes mockMinutes = mock(Minutes.class);
-        Project mockProject = mock(Project.class);
         UserProject mockUserProject = mock(UserProject.class);
 
         // ScheduleDto 생성
@@ -315,8 +397,6 @@ class MinutesServiceTest {
     void summarizeText_UserNotInProject_ThrowsException() {
         // given
         Long minutesId = 1L;
-        Minutes mockMinutes = mock(Minutes.class);
-        Project mockProject = mock(Project.class);
 
         when(minutesRepository.findById(minutesId)).thenReturn(Optional.of(mockMinutes));
         when(mockMinutes.getProject()).thenReturn(mockProject);
@@ -333,8 +413,6 @@ class MinutesServiceTest {
         // given
         Long minutesId = 1L;
         String extractedText = "테스트를 위한 회의 내용입니다.";
-        Minutes mockMinutes = mock(Minutes.class);
-        Project mockProject = mock(Project.class);
         UserProject mockUserProject = mock(UserProject.class);
 
         ScheduleDto invalidSchedule = new ScheduleDto();
@@ -366,8 +444,6 @@ class MinutesServiceTest {
         // given
         Long minutesId = 1L;
         String extractedText = "테스트를 위한 회의 내용입니다.";
-        Minutes mockMinutes = mock(Minutes.class);
-        Project mockProject = mock(Project.class);
         UserProject mockUserProject = mock(UserProject.class);
 
         MinutesSummarizeResult summarizeResult = new MinutesSummarizeResult();
@@ -393,8 +469,6 @@ class MinutesServiceTest {
         // given
         Long minutesId = 1L;
         String extractedText = "테스트를 위한 회의 내용입니다.";
-        Minutes mockMinutes = mock(Minutes.class);
-        Project mockProject = mock(Project.class);
         UserProject mockUserProject = mock(UserProject.class);
 
         when(minutesRepository.findById(minutesId)).thenReturn(Optional.of(mockMinutes));
@@ -418,8 +492,6 @@ class MinutesServiceTest {
         // given
         Long minutesId = 1L;
         String extractedText = "테스트를 위한 회의 내용입니다.";
-        Minutes mockMinutes = mock(Minutes.class);
-        Project mockProject = mock(Project.class);
         UserProject mockUserProject = mock(UserProject.class);
 
         when(minutesRepository.findById(minutesId)).thenReturn(Optional.of(mockMinutes));
@@ -444,9 +516,6 @@ class MinutesServiceTest {
         Long minutesId = 1L;
         Long projectId = 1L;
         String minutesName = "Updated Minutes";
-        User mockUser = mock(User.class);
-        Minutes mockMinutes = mock(Minutes.class);
-        Project mockProject = mock(Project.class);
         UserProject mockUserProject = mock(UserProject.class);
 
         CurrentUserHolder.set(mockUser);
@@ -491,7 +560,6 @@ class MinutesServiceTest {
         Long minutesId = 1L;
         Long projectId = 1L;
         String minutesName = "업데이트된 회의록입니다.";
-        User mockUser = mock(User.class);
 
         CurrentUserHolder.set(mockUser);
         when(minutesRepository.findById(minutesId)).thenReturn(Optional.empty());
@@ -508,8 +576,6 @@ class MinutesServiceTest {
         Long minutesId = 1L;
         Long projectId = 1L;
         String minutesName = "업데이트된 회의록입니다.";
-        User mockUser = mock(User.class);
-        Minutes mockMinutes = mock(Minutes.class);
 
         CurrentUserHolder.set(mockUser);
         when(minutesRepository.findById(minutesId)).thenReturn(Optional.of(mockMinutes));
@@ -527,9 +593,6 @@ class MinutesServiceTest {
         Long minutesId = 1L;
         Long projectId = 1L;
         String minutesName = "업데이트된 회의록입니다.";
-        User mockUser = mock(User.class);
-        Minutes mockMinutes = mock(Minutes.class);
-        Project mockProject = mock(Project.class);
 
         CurrentUserHolder.set(mockUser);
         when(minutesRepository.findById(minutesId)).thenReturn(Optional.of(mockMinutes));
@@ -548,8 +611,6 @@ class MinutesServiceTest {
         Long projectId = 1L;
         String textContent = "직접 입력한 회의록입니다.";
         String minutesName = "직접 입력한 회의록";
-        User mockUser = mock(User.class);
-        Project mockProject = mock(Project.class);
         UserProject mockUserProject = mock(UserProject.class);
 
         CurrentUserHolder.set(mockUser);
@@ -585,7 +646,6 @@ class MinutesServiceTest {
         Long projectId = 1L;
         String textContent = "직접 입력한 회의록입니다.";
         String minutesName = "직접 입력한 회의록";
-        User mockUser = mock(User.class);
 
         CurrentUserHolder.set(mockUser);
         when(projectRepository.findById(projectId)).thenReturn(Optional.empty());
@@ -602,8 +662,6 @@ class MinutesServiceTest {
         Long projectId = 1L;
         String textContent = "직접 입력한 회의록입니다.";
         String minutesName = "직접 입력한 회의록";
-        User mockUser = mock(User.class);
-        Project mockProject = mock(Project.class);
 
         CurrentUserHolder.set(mockUser);
         when(projectRepository.findById(projectId)).thenReturn(Optional.of(mockProject));
@@ -807,8 +865,6 @@ class MinutesServiceTest {
     void getProjectMinutes_EmptyList_ReturnsEmptyList() {
         // given
         Long projectId = 1L;
-        User mockUser = mock(User.class);
-        Project mockProject = mock(Project.class);
         UserProject mockUserProject = mock(UserProject.class);
 
         CurrentUserHolder.set(mockUser);
@@ -832,8 +888,6 @@ class MinutesServiceTest {
     void deleteMinutes_Success() {
         // given
         Long minutesId = 1L;
-        Project mockProject = mock(Project.class);
-        Minutes mockMinutes = mock(Minutes.class);
 
         when(minutesRepository.findById(minutesId)).thenReturn(Optional.of(mockMinutes));
         when(mockMinutes.getProject()).thenReturn(mockProject);
@@ -857,8 +911,6 @@ class MinutesServiceTest {
     void deleteMinutes_UnauthenticatedUser_ThrowsException() {
         // given
         Long minutesId = 1L;
-        Minutes mockMinutes = mock(Minutes.class);
-        Project mockProject = mock(Project.class);
 
         when(minutesRepository.findById(minutesId)).thenReturn(Optional.of(mockMinutes));
         when(mockMinutes.getProject()).thenReturn(mockProject);
@@ -875,9 +927,6 @@ class MinutesServiceTest {
     void deleteMinutes_NotLeaderUser_ThrowsException() {
         // given
         Long minutesId = 1L;
-        User mockUser = mock(User.class);
-        Minutes mockMinutes = mock(Minutes.class);
-        Project mockProject = mock(Project.class);
         UserProject nonLeaderProject = mock(UserProject.class);
 
         CurrentUserHolder.set(mockUser);
@@ -895,48 +944,6 @@ class MinutesServiceTest {
         verify(userProjectRepository).findByUserAndProject(mockUser, mockProject);
         verify(nonLeaderProject).getRole();
     }
-
-//    @Test
-//    @DisplayName("파일 URL 생성 테스트")
-//    void generateFileUrl_Success() {
-//        // given
-//        String directory = "minutes_voice";
-//        String fileName = "sample file.mp3";
-//
-//        // Expected encoded URL
-//        String expectedUrl = "https://kr.object.ncloudstorage.com/logmeet/minutes_voice/sample+file.mp3";
-//
-//        // when
-//        String resultUrl = minutesService.generateFileUrl(directory, fileName);
-//
-//        // then
-//        assertNotNull(resultUrl);
-//        assertEquals(expectedUrl, resultUrl);
-//    }
-
-//    @Test
-//    @DisplayName("Base64 디코딩 실패 시 예외 발생")
-//    void decodeBase64ToFile_Base64DecodingError_ThrowsException() {
-//        // given
-//        String invalidBase64Data = "invalid base64";
-//        String fileName = "testfile.txt";
-//
-//        // when & then
-//        BaseException exception = assertThrows(BaseException.class, () -> minutesService.decodeBase64ToFile(invalidBase64Data, fileName));
-//        assertEquals(MINUTES_INVALID_BASE64_DATA, exception.getStatus());
-//    }
-
-//    @Test
-//    @DisplayName("파일 디코딩 중 IOException 발생 시 예외 발생")
-//    void decodeBase64ToFile_FileDecodingError_ThrowsException() {
-//        // given
-//        String validBase64Data = Base64.getEncoder().encodeToString("valid data".getBytes());
-//        String fileName = "invalid/testfile.txt";
-//
-//        // when & then
-//        BaseException exception = assertThrows(BaseException.class, () -> minutesService.decodeBase64ToFile(validBase64Data, fileName));
-//        assertEquals(S3_FILE_DECODING_ERROR, exception.getStatus());
-//    }
 
     @Test
     @DisplayName("인증되지 않은 사용자 예외 테스트")

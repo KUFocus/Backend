@@ -20,7 +20,7 @@ public class TokenCleanupService {
         LocalDateTime now = LocalDateTime.now();
         refreshTokenRepository.findByExpirationDateBefore(now).forEach(token -> {
             refreshTokenRepository.delete(token);
-            log.info("만료된 Refresh Token 삭제: {}", token.getRefreshToken());
+            log.info("만료된 Refresh Token 삭제: {}", token.getToken());
         });
         log.info("만료된 Refresh Token 정리 작업 완료");
     }

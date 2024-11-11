@@ -38,7 +38,7 @@ public class JwtProvider {
     @Value("${secret.jwt-secret-key}")
     private String secretKey;
     private Key key;
-    private final SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.HS256;
+    private static final SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.HS256;
 
     @PostConstruct
     public void init() {
@@ -136,7 +136,7 @@ public class JwtProvider {
             String email = claims.getSubject();
             Optional<RefreshToken> refreshToken = refreshTokenRepository.findByUserEmail(email);
 
-            boolean isValid = refreshToken.isPresent() && token.equals(refreshToken.get().getRefreshToken());
+            boolean isValid = refreshToken.isPresent() && token.equals(refreshToken.get().getToken());
             if (isValid) {
                 log.info("Refresh 토큰 유효: token={}", token);
             } else {

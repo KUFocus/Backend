@@ -8,6 +8,8 @@ import java.util.stream.Collectors;
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.INVALID_INPUT_VALUE;
 
 public class ValidationUtils {
+    private ValidationUtils() {
+    }
 
     public static void validateBindingResult(BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {

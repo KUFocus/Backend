@@ -1,7 +1,6 @@
 package org.focus.logmeet.controller.dto.minutes;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.Getter;
 import org.focus.logmeet.domain.enums.MinutesType;
 import org.focus.logmeet.domain.enums.ProjectColor;

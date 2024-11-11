@@ -3,6 +3,9 @@ package org.focus.logmeet.security.aspect;
 import org.focus.logmeet.domain.User;
 
 public class CurrentUserHolder {
+    private CurrentUserHolder() {
+    }
+
     private static final ThreadLocal<User> currentUser = new ThreadLocal<>();
 
     public static void set(User user) {

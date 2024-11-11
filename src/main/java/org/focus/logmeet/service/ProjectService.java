@@ -28,7 +28,7 @@ import static org.focus.logmeet.domain.enums.Status.ACTIVE;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ProjectService { //TODO: 인증 과정 중 예외 발생 시 BaseException 으로 처리
+public class ProjectService {
 
     private final ProjectRepository projectRepository;
     private final UserProjectRepository userProjectRepository;

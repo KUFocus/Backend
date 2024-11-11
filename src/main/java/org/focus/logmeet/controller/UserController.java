@@ -9,5 +9,5 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/users")
-public class UserController { //TODO: 회원정보 수정
+public class UserController {
 }

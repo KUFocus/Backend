@@ -7,6 +7,8 @@ import org.focus.logmeet.controller.dto.auth.AuthSignupRequest;
 import org.focus.logmeet.controller.dto.auth.AuthSignupResponse;
 import org.focus.logmeet.domain.RefreshToken;
 import org.focus.logmeet.domain.User;
+import org.focus.logmeet.domain.UserProject;
+import org.focus.logmeet.domain.enums.Status;
 import org.focus.logmeet.repository.RefreshTokenRepository;
 import org.focus.logmeet.repository.UserRepository;
 import org.focus.logmeet.security.jwt.JwtProvider;
@@ -21,11 +23,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -51,6 +55,47 @@ class AuthServiceTest {
     private AuthSignupRequest signupRequest;
     private User loginUser;
     private JwtTokenDto tokenDto;
+
+    @Test
+    @DisplayName("UserProjects 필드가 초기화되는지 검증")
+    void userProjectsInitializationTest() {
+        // given
+        UserProject userProject = mock(UserProject.class);
+        loginUser.setUserProjects(List.of(userProject));
+
+        // when
+        List<UserProject> projects = loginUser.getUserProjects();
+
+        // then
+        assertNotNull(projects);
+        assertEquals(1, projects.size());
+        assertEquals(userProject, projects.get(0));
+    }
+
+    @Test
+    @DisplayName("content 필드 기본 사용 테스트")
+    void contentFieldUsageTest() {
+        // given
+        String content = "테스트 content입니다.";
+        loginUser.setContent(content);
+
+        // when
+        String retrievedContent = loginUser.getContent();
+
+        // then
+        assertNotNull(retrievedContent);
+        assertEquals(content, retrievedContent);
+    }
+
+    @Test
+    @DisplayName("status 필드 기본값 검증")
+    void statusFieldDefaultTest() {
+        // when
+        Status status = loginUser.getStatus();
+
+        // then
+        assertEquals(Status.ACTIVE, status);
+    }
 
     @BeforeEach
     void setUp() {
@@ -176,17 +221,17 @@ class AuthServiceTest {
         //given
         String email = "test@example.com";
         String refreshToken = "newRefreshToken";
-        AuthLoginRequest loginRequest = new AuthLoginRequest(email, "password123");
+        AuthLoginRequest request = new AuthLoginRequest(email, "password123");
         User user = User.builder().email(email).password("encodedPassword").build();
-        JwtTokenDto tokenDto = new JwtTokenDto("accessToken", refreshToken);
+        JwtTokenDto token = new JwtTokenDto("accessToken", refreshToken);
 
         when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
-        when(jwtProvider.createAllToken(anyString())).thenReturn(tokenDto);
+        when(jwtProvider.createAllToken(anyString())).thenReturn(token);
         when(refreshTokenRepository.findByUserEmail(anyString())).thenReturn(Optional.empty());
 
         //when
-        authService.login(loginRequest);
+        authService.login(request);
 
         //then
         verify(refreshTokenRepository, times(1)).save(any(RefreshToken.class));
@@ -198,21 +243,21 @@ class AuthServiceTest {
         //given
         String email = "test@example.com";
         String refreshToken = "newRefreshToken";
-        AuthLoginRequest loginRequest = new AuthLoginRequest(email, "password123");
+        AuthLoginRequest request = new AuthLoginRequest(email, "password123");
         User user = User.builder().email(email).password("encodedPassword").build();
-        JwtTokenDto tokenDto = new JwtTokenDto("accessToken", refreshToken);
+        JwtTokenDto token = new JwtTokenDto("accessToken", refreshToken);
         RefreshToken existingToken = new RefreshToken(null, "oldToken", email, LocalDateTime.now().plusDays(1));
 
         when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
-        when(jwtProvider.createAllToken(anyString())).thenReturn(tokenDto);
+        when(jwtProvider.createAllToken(anyString())).thenReturn(token);
         when(refreshTokenRepository.findByUserEmail(anyString())).thenReturn(Optional.of(existingToken));
 
         //when
-        authService.login(loginRequest);
+        authService.login(request);
 
         //then
         verify(refreshTokenRepository, times(1)).save(existingToken);
-        assertThat(existingToken.getRefreshToken()).isEqualTo(refreshToken);
+        assertThat(existingToken.getToken()).isEqualTo(refreshToken);
     }
 }
