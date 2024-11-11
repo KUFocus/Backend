@@ -17,8 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
 import static org.focus.logmeet.domain.enums.Role.LEADER;
@@ -80,7 +78,7 @@ public class ProjectService {
                         up.getRole(),
                         up.getBookmark(),
                         up.getColor()))
-                .collect(Collectors.toList());
+                .toList();
 
         return new ProjectInfoResult(project.getId(), project.getName(), project.getContent(), project.getCreatedAt(), userProjectDtos);
     }
@@ -109,7 +107,7 @@ public class ProjectService {
                     project.getUserProjects().size(),
                     project.getCreatedAt()
             );
-        }).collect(Collectors.toList());
+        }).toList();
     }
 
     @Transactional
@@ -140,7 +138,7 @@ public class ProjectService {
                             project.getCreatedAt()
                     );
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Transactional
@@ -169,7 +167,7 @@ public class ProjectService {
         log.info("프로젝트 즐겨찾기 추가/해제 시도: projectId={}", projectId);
         UserProject userProject = validateUserAndProject(projectId);
 
-        if (userProject.getBookmark() == Boolean.TRUE) {
+        if (Boolean.TRUE.equals(userProject.getBookmark())) {
             userProject.setBookmark(Boolean.FALSE);
         } else {
             userProject.setBookmark(Boolean.TRUE);
