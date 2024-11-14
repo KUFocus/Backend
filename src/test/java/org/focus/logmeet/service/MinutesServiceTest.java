@@ -673,11 +673,19 @@ class MinutesServiceTest {
     }
 
     @Test
-    @DisplayName("회의록 정보 조회 성공 - VOICE 타입")
-    void getMinutes_Success_VoiceType() {
+    @DisplayName("회의록 정보 조회 성공 - VOICE 타입 (화자별 텍스트 추출)")
+    void getMinutes_Success_VoiceTypeWithSpeakerSegments() {
         // given
         Long minutesId = 1L;
-        String voiceContent = "{\"overall_text\": \"음성 내용입니다.\"}";
+        String voiceContent = """
+        {
+            "segments": [
+                {"speaker": "A", "text": "안녕하세요"},
+                {"speaker": "B", "text": "반갑습니다"},
+                {"speaker": "A", "text": "오늘 회의를 시작하겠습니다"}
+            ]
+        }
+        """;
 
         when(mockMinutes.getId()).thenReturn(minutesId);
         when(mockMinutes.getProject()).thenReturn(mockProject);
@@ -695,7 +703,7 @@ class MinutesServiceTest {
         // then
         assertNotNull(result);
         assertEquals(minutesId, result.getMinutesId());
-        assertEquals("음성 내용입니다.", result.getContent());
+        assertEquals("A: 안녕하세요\nB: 반갑습니다\nA: 오늘 회의를 시작하겠습니다", result.getContent());
     }
 
     @Test

@@ -356,8 +356,23 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode rootNode = objectMapper.readTree(content);
 
-            String textField = getTextFieldForType(type);
-            JsonNode textNode = rootNode.get(textField);
+            if (type == MinutesType.VOICE) {
+                JsonNode segmentsNode = rootNode.get("segments");
+                if (segmentsNode != null && segmentsNode.isArray()) {
+                    StringBuilder formattedText = new StringBuilder();
+
+                    for (JsonNode segment : segmentsNode) {
+                        String speaker = segment.get("speaker").asText();
+                        String text = segment.get("text").asText();
+
+                        formattedText.append(speaker).append(": ").append(text).append("\n");
+                    }
+
+                    return formattedText.toString().trim();
+                }
+            }
+
+            JsonNode textNode = rootNode.get("text");
             if (textNode != null) {
                 return textNode.asText();
             }
@@ -368,12 +383,6 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
         return "";
     }
 
-    private String getTextFieldForType(MinutesType type) {
-        return switch (type) {
-            case VOICE -> "overall_text";
-            default -> "text";
-        };
-    }
 
     @Transactional
     @CurrentUser //TODO: @Transactional(readOnly = true) 왜 필요?
