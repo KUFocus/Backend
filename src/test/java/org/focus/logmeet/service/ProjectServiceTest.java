@@ -6,6 +6,7 @@ import org.focus.logmeet.domain.*;
 import org.focus.logmeet.domain.enums.ProjectColor;
 import org.focus.logmeet.domain.enums.Role;
 import org.focus.logmeet.domain.enums.Status;
+import org.focus.logmeet.repository.InviteCodeRepository;
 import org.focus.logmeet.repository.ProjectRepository;
 import org.focus.logmeet.repository.UserProjectRepository;
 import org.focus.logmeet.security.aspect.CurrentUserHolder;
@@ -17,6 +18,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,6 +37,9 @@ class ProjectServiceTest {
     @Mock
     private UserProjectRepository userProjectRepository;
 
+    @Mock
+    private InviteCodeRepository inviteCodeRepository;
+
     @InjectMocks
     private ProjectService projectService;
 
@@ -45,6 +50,51 @@ class ProjectServiceTest {
                 .name("테스트 프로젝트")
                 .content("테스트 프로젝트입니다.")
                 .build();
+    }
+
+    @Test
+    @DisplayName("inviteCodes 필드 초기화 테스트")
+    void inviteCodesInitializationTest() {
+        // given
+        InviteCode inviteCode = new InviteCode();
+        project.setInviteCodes(List.of(inviteCode));
+
+        // when
+        List<InviteCode> inviteCodes = project.getInviteCodes();
+
+        // then
+        assertNotNull(inviteCodes);
+        assertEquals(1, inviteCodes.size());
+        assertEquals(inviteCode, inviteCodes.get(0));
+    }
+    @Test
+    @DisplayName("InviteCode의 id 필드 값 설정 및 검증")
+    void inviteCodeIdFieldTest() {
+        // given
+        InviteCode inviteCode = new InviteCode();
+        inviteCode.setId(1L);
+
+        // when
+        Long id = inviteCode.getId();
+
+        // then
+        assertNotNull(id);
+        assertEquals(1L, id);
+    }
+
+    @Test
+    @DisplayName("InviteCode의 project 필드 설정 및 검증")
+    void inviteCodeProjectFieldTest() {
+        // given
+        InviteCode inviteCode = new InviteCode();
+        inviteCode.setProject(project);
+
+        // when
+        Project associatedProject = inviteCode.getProject();
+
+        // then
+        assertNotNull(associatedProject);
+        assertEquals(project, associatedProject);
     }
 
     @Test
@@ -690,5 +740,150 @@ class ProjectServiceTest {
         //when & then
         BaseException exception = assertThrows(BaseException.class, () -> projectService.deleteProject(projectId));
         assertEquals(USER_NOT_AUTHENTICATED, exception.getStatus());
+    }
+    @Test
+    @DisplayName("사용자가 리더이고 기존 초대 코드가 없을 때 새로운 초대 코드 생성")
+    void getInviteCode_Success_NewCodeGenerated() {
+        // given
+        Long projectId = 1L;
+        User mockUser = mock(User.class);
+        CurrentUserHolder.set(mockUser);
+
+
+        Project mockProject = mock(Project.class);
+        UserProject mockUserProject = mock(UserProject.class);
+
+        when(projectRepository.findById(projectId)).thenReturn(Optional.of(mockProject));
+        when(userProjectRepository.findByUserAndProject(mockUser, mockProject)).thenReturn(Optional.of(mockUserProject));
+        when(mockUserProject.getRole()).thenReturn(LEADER);
+
+        when(inviteCodeRepository.findValidCodeByProjectId(eq(projectId), any(LocalDateTime.class)))
+                .thenReturn(Optional.empty());
+
+        when(inviteCodeRepository.existsByCode(anyString())).thenReturn(false);
+
+        // when
+        ProjectInviteCodeResult result = projectService.getInviteCode(projectId);
+
+        // then
+        assertNotNull(result);
+        assertEquals(projectId, result.getProjectId());
+        assertNotNull(result.getInviteCode());
+        assertNotNull(result.getExpirationDate());
+
+        verify(inviteCodeRepository, times(1)).save(any(InviteCode.class));
+    }
+
+    @Test
+    @DisplayName("사용자가 리더이고 기존 초대 코드가 있을 때 기존 코드 반환")
+    void getInviteCode_Success_ExistingCodeReturned() {
+        // given
+        Long projectId = 1L;
+        User mockUser = mock(User.class);
+        CurrentUserHolder.set(mockUser);
+
+        Project mockProject = mock(Project.class);
+        UserProject mockUserProject = mock(UserProject.class);
+
+        when(projectRepository.findById(projectId)).thenReturn(Optional.of(mockProject));
+        when(userProjectRepository.findByUserAndProject(mockUser, mockProject)).thenReturn(Optional.of(mockUserProject));
+        when(mockUserProject.getRole()).thenReturn(LEADER);
+
+        InviteCode existingInviteCode = InviteCode.builder()
+                .code("EXISTINGCODE")
+                .project(mockProject)
+                .expirationDate(LocalDateTime.now().plusDays(7))
+                .build();
+
+        when(inviteCodeRepository.findValidCodeByProjectId(eq(projectId), any(LocalDateTime.class)))
+                .thenReturn(Optional.of(existingInviteCode));
+
+        // when
+        ProjectInviteCodeResult result = projectService.getInviteCode(projectId);
+
+        // then
+        assertNotNull(result);
+        assertEquals(projectId, result.getProjectId());
+        assertEquals("EXISTINGCODE", result.getInviteCode());
+        assertEquals(existingInviteCode.getExpirationDate(), result.getExpirationDate());
+
+        verify(inviteCodeRepository, never()).save(any(InviteCode.class));
+    }
+
+    @Test
+    @DisplayName("사용자가 리더가 아닐 때 예외 발생")
+    void getInviteCode_UserNotLeader_ThrowsException() {
+        // given
+        Long projectId = 1L;
+        User mockUser = mock(User.class);
+        when(mockUser.getId()).thenReturn(1L);
+        CurrentUserHolder.set(mockUser);
+
+        Project mockProject = mock(Project.class);
+        UserProject mockUserProject = mock(UserProject.class);
+
+        // 모킹 설정 추가
+        when(projectRepository.findById(projectId)).thenReturn(Optional.of(mockProject));
+        when(userProjectRepository.findByUserAndProject(mockUser, mockProject)).thenReturn(Optional.of(mockUserProject));
+
+        when(mockUserProject.getUser()).thenReturn(mockUser);
+        when(mockUserProject.getRole()).thenReturn(MEMBER);
+
+        // when & then
+        BaseException exception = assertThrows(BaseException.class, () -> projectService.getInviteCode(projectId));
+        assertEquals(USER_NOT_LEADER, exception.getStatus());
+
+        verify(inviteCodeRepository, never()).findValidCodeByProjectId(anyLong(), any(LocalDateTime.class));
+        verify(inviteCodeRepository, never()).save(any(InviteCode.class));
+    }
+
+    @Test
+    @DisplayName("인증되지 않은 사용자가 초대 코드 요청 시 예외 발생")
+    void getInviteCode_UserNotAuthenticated_ThrowsException() {
+        // given
+        Long projectId = 1L;
+        CurrentUserHolder.clear();
+
+        // when & then
+        BaseException exception = assertThrows(BaseException.class, () -> projectService.getInviteCode(projectId));
+        assertEquals(USER_NOT_AUTHENTICATED, exception.getStatus());
+
+        verify(inviteCodeRepository, never()).findValidCodeByProjectId(anyLong(), any(LocalDateTime.class));
+        verify(inviteCodeRepository, never()).save(any(InviteCode.class));
+    }
+
+    @Test
+    @DisplayName("초대 코드 생성 시 중복 코드가 발생하면 재시도하여 고유 코드 생성")
+    void getInviteCode_CodeGenerationRetriesOnDuplicate() {
+        // given
+        Long projectId = 1L;
+        User mockUser = mock(User.class);
+        CurrentUserHolder.set(mockUser);
+
+        Project mockProject = mock(Project.class);
+        UserProject mockUserProject = mock(UserProject.class);
+
+        when(projectRepository.findById(projectId)).thenReturn(Optional.of(mockProject));
+        when(userProjectRepository.findByUserAndProject(mockUser, mockProject)).thenReturn(Optional.of(mockUserProject));
+        when(mockUserProject.getRole()).thenReturn(LEADER);
+
+        when(inviteCodeRepository.findValidCodeByProjectId(eq(projectId), any(LocalDateTime.class)))
+                .thenReturn(Optional.empty());
+
+        when(inviteCodeRepository.existsByCode(anyString()))
+                .thenReturn(true)   // 첫 번째 시도에서 중복 코드 발생
+                .thenReturn(false);  // 두 번째 시도에서 고유 코드 생성
+
+        // when
+        ProjectInviteCodeResult result = projectService.getInviteCode(projectId);
+
+        // then
+        assertNotNull(result);
+        assertEquals(projectId, result.getProjectId());
+        assertNotNull(result.getInviteCode());
+        assertNotNull(result.getExpirationDate());
+
+        verify(inviteCodeRepository, times(2)).existsByCode(anyString());
+        verify(inviteCodeRepository, times(1)).save(any(InviteCode.class));
     }
 }
