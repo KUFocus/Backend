@@ -165,4 +165,17 @@ public class ProjectController {
         projectService.leaveProject(projectId);
         return new BaseResponse<>(SUCCESS);
     }
+
+    @Operation(summary = "프로젝트 초대 코드 생성", description = "현재 프로젝트의 초대 코드를 생성합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "프로젝트 초대 코드 생성 성공")
+    })
+    @GetMapping("/{projectId}/invite-code")
+    public BaseResponse<ProjectInviteCodeResult> getInviteCode(
+            @Parameter(name = "projectId", description = "초대 코드를 얻기 위한 프로젝트의 고유 ID", required = true)
+            @PathVariable Long projectId) {
+        log.info("프로젝트 초대 코드 요청: projectId={}", projectId);
+        ProjectInviteCodeResult result = projectService.getInviteCode(projectId);
+        return new BaseResponse<>(result);
+    }
 }

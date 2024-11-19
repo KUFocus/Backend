@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.io.UnsupportedEncodingException;
 import java.time.LocalDateTime;
 import java.util.Collections;
 
@@ -263,5 +264,28 @@ class ProjectControllerTest {
         // then
         int status = result.getResponse().getStatus();
         assertThat(status).isEqualTo(200);
-        }
+    }
+
+    @Test
+    @DisplayName("프로젝트 초대 코드 생성 요청이 성공적으로 처리됨")
+    void getInviteCode() throws Exception {
+        // given
+        ProjectInviteCodeResult projectInviteCodeResult = new ProjectInviteCodeResult(1L, "12345678", LocalDateTime.now());
+        when(projectService.getInviteCode(1L)).thenReturn(projectInviteCodeResult);
+
+        // when
+        MvcResult result = mockMvc.perform(get("/projects/1/invite-code"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // then
+        int status = result.getResponse().getStatus();
+        String content = result.getResponse().getContentAsString();
+
+        JsonNode jsonNode = objectMapper.readTree(content);
+        String code = jsonNode.path("result").path("inviteCode").asText();
+
+        assertThat(status).isEqualTo(200);
+        assertThat(code).isEqualTo("12345678");
+    }
 }

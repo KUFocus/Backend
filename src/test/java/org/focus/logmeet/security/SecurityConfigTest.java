@@ -72,7 +72,7 @@ class SecurityConfigTest {
         // given
         AuthLoginRequest loginRequest = new AuthLoginRequest("user@example.com", "password");
         when(authService.login(loginRequest))
-                .thenReturn(new AuthLoginResponse(116L, "mocked-token", "mocked-refresh-token"));
+                .thenReturn(new AuthLoginResponse(116L, "홍길동", "mocked-token", "mocked-refresh-token"));
 
         // when
         mockMvc.perform(MockMvcRequestBuilders.post("/auth/login")

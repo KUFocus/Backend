@@ -29,6 +29,9 @@ public class Project extends BaseTimeEntity {
     @OneToMany(mappedBy = "project", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<Minutes> minutes;
 
+    @OneToMany(mappedBy = "project", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private List<InviteCode> inviteCodes;
+
     @Column(length = 30, nullable = false)
     private String name;
 
