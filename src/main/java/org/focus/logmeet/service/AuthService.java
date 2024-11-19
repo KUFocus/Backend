@@ -69,7 +69,7 @@ public class AuthService {
 
         log.info("로그인 성공: email={}", user.getEmail());
 
-        return new AuthLoginResponse(user.getId(), allToken.getAccessToken(), allToken.getRefreshToken());
+        return new AuthLoginResponse(user.getId(), user.getName(), allToken.getAccessToken(), allToken.getRefreshToken());
     }
 
     @Transactional
