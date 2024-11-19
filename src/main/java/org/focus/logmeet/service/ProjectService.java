@@ -4,10 +4,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.focus.logmeet.common.exception.BaseException;
 import org.focus.logmeet.controller.dto.project.*;
+import org.focus.logmeet.domain.InviteCode;
 import org.focus.logmeet.domain.Project;
 import org.focus.logmeet.domain.User;
 import org.focus.logmeet.domain.UserProject;
 import org.focus.logmeet.domain.enums.ProjectColor;
+import org.focus.logmeet.repository.InviteCodeRepository;
 import org.focus.logmeet.repository.ProjectRepository;
 import org.focus.logmeet.repository.UserProjectRepository;
 import org.focus.logmeet.security.annotation.CurrentUser;
@@ -15,8 +17,11 @@ import org.focus.logmeet.security.aspect.CurrentUserHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
 import static org.focus.logmeet.domain.enums.Role.LEADER;
@@ -30,6 +35,7 @@ public class ProjectService {
 
     private final ProjectRepository projectRepository;
     private final UserProjectRepository userProjectRepository;
+    private final InviteCodeRepository inviteCodeRepository;
 
     @Transactional
     @CurrentUser
@@ -258,6 +264,44 @@ public class ProjectService {
 
         userProjectRepository.delete(userProject);
         log.info("프로젝트 나가기 성공: projectId={}, userId={}", projectId, userProject.getUser().getId());
+    }
+
+    @Transactional
+    @CurrentUser
+    public ProjectInviteCodeResult getInviteCode(Long projectId) {
+        log.info("프로젝트 초대 코드 생성 시도: projectId={}", projectId);
+        UserProject userProject = validateUserAndProject(projectId);
+
+        if (!userProject.getRole().equals(LEADER)) {
+            log.info("권한이 없는 초대 코드 생성 시도: projectId={}, userId={}", projectId, userProject.getUser().getId());
+            throw new BaseException(USER_NOT_LEADER);
+        }
+
+        Optional<InviteCode> existingCode = inviteCodeRepository.findValidCodeByProjectId(projectId, LocalDateTime.now());
+        if (existingCode.isPresent()) {
+            InviteCode inviteCode = existingCode.get();
+            log.info("기존 초대 코드 반환: projectId={}, code={}", projectId, inviteCode.getCode());
+            return new ProjectInviteCodeResult(projectId, inviteCode.getCode(), inviteCode.getExpirationDate());
+        }
+
+        LocalDateTime expirationDate = LocalDateTime.now().plusWeeks(1);
+        String code = generateInviteCode();
+
+        InviteCode inviteCode = InviteCode.builder()
+                .project(userProject.getProject())
+                .code(code)
+                .expirationDate(expirationDate).build();
+
+        inviteCodeRepository.save(inviteCode);
+        return new ProjectInviteCodeResult(projectId, code, expirationDate);
+    }
+
+    private String generateInviteCode() {
+        String code;
+        do {
+            code = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        } while (inviteCodeRepository.existsByCode(code));
+        return code;
     }
 
     private UserProject validateUserAndProject(Long projectId) {
