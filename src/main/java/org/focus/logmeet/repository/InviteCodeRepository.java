@@ -12,6 +12,7 @@ import java.util.Optional;
 @Repository
 public interface InviteCodeRepository extends JpaRepository<InviteCode, Long> {
     boolean existsByCode(String code);
+    Optional<InviteCode> findByCodeAndExpirationDateAfter(String code, LocalDateTime dateTime);
     @Query("SELECT ic FROM InviteCode ic WHERE ic.project.id = :projectId AND ic.expirationDate > :currentTime")
     Optional<InviteCode> findValidCodeByProjectId(@Param("projectId") Long projectId, @Param("currentTime") LocalDateTime currentTime);
 }
