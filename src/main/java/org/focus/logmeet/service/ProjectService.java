@@ -9,6 +9,7 @@ import org.focus.logmeet.domain.Project;
 import org.focus.logmeet.domain.User;
 import org.focus.logmeet.domain.UserProject;
 import org.focus.logmeet.domain.enums.ProjectColor;
+import org.focus.logmeet.domain.enums.Role;
 import org.focus.logmeet.repository.InviteCodeRepository;
 import org.focus.logmeet.repository.ProjectRepository;
 import org.focus.logmeet.repository.UserProjectRepository;
@@ -294,6 +295,37 @@ public class ProjectService {
 
         inviteCodeRepository.save(inviteCode);
         return new ProjectInviteCodeResult(projectId, code, expirationDate);
+    }
+
+    @Transactional
+    @CurrentUser
+    public void join(String code) {
+        log.info("프로젝트 초대 코드로 프로젝트 참여 시도: inviteCode={}", code);
+        LocalDateTime now = LocalDateTime.now();
+        User currentUser = CurrentUserHolder.get();
+
+        InviteCode inviteCode = inviteCodeRepository.findByCodeAndExpirationDateAfter(code, now)
+                .orElseThrow(() -> {
+                    log.info("유효하지 않거나 만료된 초대 코드 사용 시도: inviteCode={}", code);
+                    return new BaseException(INVALID_INVITE_CODE);
+                });
+
+        Project project = inviteCode.getProject();
+
+        boolean alreadyJoined = userProjectRepository.existsByUserAndProject(currentUser, project);
+        if (alreadyJoined) {
+            log.info("이미 프로젝트에 참여한 사용자: userId={}, projectId={}", currentUser.getId(), project.getId());
+            throw new BaseException(ALREADY_JOINED_PROJECT);
+        }
+
+        UserProject userProject = UserProject.builder()
+                .user(currentUser)
+                .project(project)
+                .role(Role.MEMBER)
+                .build();
+
+        userProjectRepository.save(userProject);
+        log.info("프로젝트 참여 성공: userId={}, projectId={}", currentUser.getId(), project.getId());
     }
 
     private String generateInviteCode() {

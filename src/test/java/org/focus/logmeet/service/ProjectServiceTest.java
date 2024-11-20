@@ -886,4 +886,71 @@ class ProjectServiceTest {
         verify(inviteCodeRepository, times(2)).existsByCode(anyString());
         verify(inviteCodeRepository, times(1)).save(any(InviteCode.class));
     }
+    @Test
+    @DisplayName("유효한 초대 코드로 프로젝트 참여 성공")
+    void joinProject_Success() {
+        // given
+        String code = "VALIDCODE";
+        User currentUser = mock(User.class);
+        when(currentUser.getId()).thenReturn(1L);
+        CurrentUserHolder.set(currentUser);
+
+        InviteCode inviteCode = InviteCode.builder()
+                .code(code)
+                .project(project)
+                .expirationDate(LocalDateTime.now().plusDays(1))
+                .build();
+
+        when(inviteCodeRepository.findByCodeAndExpirationDateAfter(eq(code), any(LocalDateTime.class)))
+                .thenReturn(Optional.of(inviteCode));
+
+        when(userProjectRepository.existsByUserAndProject(currentUser, project)).thenReturn(false);
+
+        // when
+        projectService.join(code);
+
+        // then
+        verify(userProjectRepository, times(1)).save(any(UserProject.class));
+    }
+
+    @Test
+    @DisplayName("유효하지 않거나 만료된 초대 코드로 프로젝트 참여 시 예외 발생")
+    void joinProject_InvalidInviteCode_ThrowsException() {
+        // given
+        String code = "INVALIDCODE";
+        User currentUser = mock(User.class);
+        CurrentUserHolder.set(currentUser);
+
+        when(inviteCodeRepository.findByCodeAndExpirationDateAfter(eq(code), any(LocalDateTime.class)))
+                .thenReturn(Optional.empty());
+
+        // when & then
+        BaseException exception = assertThrows(BaseException.class, () -> projectService.join(code));
+        assertEquals(INVALID_INVITE_CODE, exception.getStatus());
+    }
+
+    @Test
+    @DisplayName("이미 프로젝트에 참여한 사용자가 참여 시도 시 예외 발생")
+    void joinProject_AlreadyJoined_ThrowsException() {
+        // given
+        String code = "VALIDCODE";
+        User currentUser = mock(User.class);
+        when(currentUser.getId()).thenReturn(1L);
+        CurrentUserHolder.set(currentUser);
+
+        InviteCode inviteCode = InviteCode.builder()
+                .code(code)
+                .project(project)
+                .expirationDate(LocalDateTime.now().plusDays(1))
+                .build();
+
+        when(inviteCodeRepository.findByCodeAndExpirationDateAfter(eq(code), any(LocalDateTime.class)))
+                .thenReturn(Optional.of(inviteCode));
+
+        when(userProjectRepository.existsByUserAndProject(currentUser, project)).thenReturn(true);
+
+        // when & then
+        BaseException exception = assertThrows(BaseException.class, () -> projectService.join(code));
+        assertEquals(ALREADY_JOINED_PROJECT, exception.getStatus());
+    }
 }

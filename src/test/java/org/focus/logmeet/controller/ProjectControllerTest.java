@@ -288,4 +288,22 @@ class ProjectControllerTest {
         assertThat(status).isEqualTo(200);
         assertThat(code).isEqualTo("12345678");
     }
+
+    @Test
+    @DisplayName("프로젝트 초대 코드로 참여 요청이 성공적으로 처리됨")
+    void joinProject() throws Exception {
+        // given
+        ProjectJoinRequest request = new ProjectJoinRequest("ABCDEFGH");
+
+        // when
+        MvcResult result = mockMvc.perform(post("/projects/join")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // then
+        int status = result.getResponse().getStatus();
+        assertThat(status).isEqualTo(200);
+    }
 }
