@@ -311,7 +311,13 @@ public class ProjectService {
                 });
 
         Project project = inviteCode.getProject();
-
+        UserProject leaderProject = project.getUserProjects().stream()
+                .filter(up -> up.getRole() == Role.LEADER)
+                .findFirst()
+                .orElseThrow(() -> {
+                    log.error("프로젝트에 리더가 존재하지 않습니다: projectId={}", project.getId());
+                    return new BaseException(PROJECT_LEADER_NOT_FOUND);
+                });
         boolean alreadyJoined = userProjectRepository.existsByUserAndProject(currentUser, project);
         if (alreadyJoined) {
             log.info("이미 프로젝트에 참여한 사용자: userId={}, projectId={}", currentUser.getId(), project.getId());
@@ -322,6 +328,8 @@ public class ProjectService {
                 .user(currentUser)
                 .project(project)
                 .role(Role.MEMBER)
+                .bookmark(Boolean.FALSE)
+                .color(leaderProject.getColor())
                 .build();
 
         userProjectRepository.save(userProject);

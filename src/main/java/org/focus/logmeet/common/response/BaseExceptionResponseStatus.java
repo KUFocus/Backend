@@ -44,6 +44,7 @@ public enum BaseExceptionResponseStatus implements ResponseStatus {
     CANNOT_DELEGATE_SELF(false, 5005, "자기 자신에게 리더 권한을 위임할 수 없습니다.", 403),
     INVALID_INVITE_CODE(false, 5006, "유효하지 않거나 만료된 초대 코드입니다.", 400),
     ALREADY_JOINED_PROJECT(false, 5007, "이미 프로젝트에 참여한 사용자입니다.", 400),
+    PROJECT_LEADER_NOT_FOUND(false, 5008, "프로젝트에 리더가 존재하지 않습니다", 500),
 
     // Minutes 오류
     MINUTES_NOT_FOUND(false, 6000, "존재하지 않는 회의록입니다.", 404),

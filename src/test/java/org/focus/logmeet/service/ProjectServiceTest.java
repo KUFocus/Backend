@@ -19,10 +19,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
+import static org.focus.logmeet.domain.enums.ProjectColor.PROJECT_1;
 import static org.focus.logmeet.domain.enums.Role.LEADER;
 import static org.focus.logmeet.domain.enums.Role.MEMBER;
 import static org.junit.jupiter.api.Assertions.*;
@@ -185,7 +187,7 @@ class ProjectServiceTest {
     @DisplayName("프로젝트 생성 성공")
     void createProject_Success() {
         // given
-        ProjectCreateRequest request = new ProjectCreateRequest("테스트 프로젝트 제목", "테스트 프로젝트 내용", ProjectColor.PROJECT_1);
+        ProjectCreateRequest request = new ProjectCreateRequest("테스트 프로젝트 제목", "테스트 프로젝트 내용", PROJECT_1);
         User mockUser = mock(User.class);
         CurrentUserHolder.set(mockUser);
 
@@ -212,7 +214,7 @@ class ProjectServiceTest {
     @DisplayName("인증되지 않은 사용자가 프로젝트 생성 시 예외 발생")
     void createProject_UserNotAuthenticated_ThrowsException() {
         //given
-        ProjectCreateRequest request = new ProjectCreateRequest("프로젝트 이름", "내용", ProjectColor.PROJECT_1);
+        ProjectCreateRequest request = new ProjectCreateRequest("프로젝트 이름", "내용", PROJECT_1);
         CurrentUserHolder.clear();
 
         //when & then
@@ -351,7 +353,7 @@ class ProjectServiceTest {
         Long projectId = 1L;
         String newName = "테스트 프로젝트 업데이트 제목";
         String newContent = "테스트 프로젝트 업데이트 내용";
-        ProjectColor newColor = ProjectColor.PROJECT_1;
+        ProjectColor newColor = PROJECT_1;
 
         User mockUser = mock(User.class);
         Project mockProject = mock(Project.class);
@@ -381,7 +383,7 @@ class ProjectServiceTest {
         Long projectId = 1L;
         String newName = "수정된 프로젝트 제목";
         String newContent = "수정된 프로젝트 내용";
-        ProjectColor newColor = ProjectColor.PROJECT_1;
+        ProjectColor newColor = PROJECT_1;
 
         User mockUser = mock(User.class);
         Project mockProject = mock(Project.class);
@@ -895,6 +897,16 @@ class ProjectServiceTest {
         when(currentUser.getId()).thenReturn(1L);
         CurrentUserHolder.set(currentUser);
 
+        User leaderUser = mock(User.class);
+        UserProject leaderUserProject = UserProject.builder()
+                .user(leaderUser)
+                .project(project)
+                .role(Role.LEADER)
+                .color(PROJECT_1)
+                .build();
+
+        project.setUserProjects(List.of(leaderUserProject));
+
         InviteCode inviteCode = InviteCode.builder()
                 .code(code)
                 .project(project)
@@ -938,6 +950,16 @@ class ProjectServiceTest {
         when(currentUser.getId()).thenReturn(1L);
         CurrentUserHolder.set(currentUser);
 
+        User leaderUser = mock(User.class);
+        UserProject leaderUserProject = UserProject.builder()
+                .user(leaderUser)
+                .project(project)
+                .role(Role.LEADER)
+                .color(PROJECT_1)
+                .build();
+
+        project.setUserProjects(List.of(leaderUserProject));
+
         InviteCode inviteCode = InviteCode.builder()
                 .code(code)
                 .project(project)
@@ -953,4 +975,30 @@ class ProjectServiceTest {
         BaseException exception = assertThrows(BaseException.class, () -> projectService.join(code));
         assertEquals(ALREADY_JOINED_PROJECT, exception.getStatus());
     }
+
+    @Test
+    @DisplayName("프로젝트에 리더가 없을 때 프로젝트 참여 시 예외 발생")
+    void joinProject_NoLeader_ThrowsException() {
+        // given
+        String code = "VALIDCODE";
+        User currentUser = mock(User.class);
+        CurrentUserHolder.set(currentUser);
+
+        project.setUserProjects(new ArrayList<>());
+
+        InviteCode inviteCode = InviteCode.builder()
+                .code(code)
+                .project(project)
+                .expirationDate(LocalDateTime.now().plusDays(1))
+                .build();
+
+        when(inviteCodeRepository.findByCodeAndExpirationDateAfter(eq(code), any(LocalDateTime.class)))
+                .thenReturn(Optional.of(inviteCode));
+
+
+        // when & then
+        BaseException exception = assertThrows(BaseException.class, () -> projectService.join(code));
+        assertEquals(PROJECT_LEADER_NOT_FOUND, exception.getStatus());
+    }
+
 }
