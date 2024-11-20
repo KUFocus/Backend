@@ -178,4 +178,18 @@ public class ProjectController {
         ProjectInviteCodeResult result = projectService.getInviteCode(projectId);
         return new BaseResponse<>(result);
     }
+
+    @Operation(summary = "프로젝트 초대 코드로 참여", description = "초대 코드로 프로젝트에 참여합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "프로젝트 참여 완료")
+    })
+    @PostMapping("/join")
+    public BaseResponse<Void> getInviteCode(
+            @Validated @RequestBody ProjectJoinRequest request,
+            BindingResult bindingResult) {
+        log.info("프로젝트 초대 코드로 참여 요청: inviteCode={}", request.getInviteCode());
+        validateBindingResult(bindingResult);
+        projectService.join(request.getInviteCode());
+        return new BaseResponse<>(SUCCESS);
+    }
 }
