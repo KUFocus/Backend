@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -94,8 +96,12 @@ public class ScheduleService {
         int month = yearMonth.getMonthValue();
         List<Schedule> schedules = scheduleRepository.findSchedulesByProjectIdAndMonth(projectId, year, month);
 
+        ZoneId zoneId = ZoneId.of("Asia/Seoul"); // KST 시간대
         return schedules.stream()
-                .collect(Collectors.groupingBy(schedule -> schedule.getScheduleDate().getDayOfMonth(),
+                .collect(Collectors.groupingBy(schedule -> schedule.getScheduleDate()
+                                .atZone(ZoneOffset.UTC)
+                                .withZoneSameInstant(zoneId)
+                                .getDayOfMonth(),
                         Collectors.mapping(schedule -> userProject.getColor(), Collectors.toSet())))
                 .entrySet().stream()
                 .map(entry -> new ScheduleMonthlyListResult(
