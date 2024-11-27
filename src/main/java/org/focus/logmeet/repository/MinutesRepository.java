@@ -14,4 +14,8 @@ public interface MinutesRepository extends JpaRepository<Minutes, Long> {
     List<Minutes> findOldTemporaryMinutes(@Param("status") Status status, @Param("timeLimit") LocalDateTime timeLimit);
 
     List<Minutes> findAllByProjectId(Long projectId);
+
+    @Query("SELECT m FROM Minutes m JOIN m.project p JOIN p.userProjects up WHERE up.user.id = :userId")
+    List<Minutes> findAllByUserProjects_UserId(@Param("userId") Long userId);
+
 }
