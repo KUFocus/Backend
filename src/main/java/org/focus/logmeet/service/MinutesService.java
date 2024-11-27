@@ -93,7 +93,6 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
     public MinutesFileUploadResponse createMinutes(String filePath) {
         log.info("파일 path로 임시 회의록 생성 시도: filePath={}", filePath);
 
-        // 새로운 임시 상태의 Minutes 엔티티 생성
         Minutes minutes = new Minutes();
         MinutesType fileType;
         if (filePath.contains("minutes_voice")) {
@@ -107,18 +106,17 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
         minutes.setStatus(TEMP);  // 임시 상태로 설정
         minutes.setFilePath(filePath);
 
-        switch (fileType) {
-            case VOICE:
-                processVoice(filePath, minutes);
-                break;
+        String content = switch (fileType) {
+            case VOICE -> processVoice(filePath, minutes);
+            case PICTURE -> processPicture(filePath, minutes);
+            case MANUAL -> "";
+        };
 
-            case PICTURE:
-                processPicture(filePath, minutes);  // 이미지 처리 수정
-                break;
-
-            default:
-                throw new BaseException(MINUTES_TYPE_NOT_FOUND);
+        if (content != null) {
+            String clearContent = extractClearContent(content, fileType);
+            minutes.setClearContent(clearContent);
         }
+
         log.info("임시 회의록 저장 시도: fileType={}", fileType);
         // 임시 회의록 저장
         minutesRepository.save(minutes);
@@ -128,11 +126,12 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
     }
 
     // 음성 파일을 Flask 서버에 텍스트 변환 요청 처리
-    protected void processVoice(String filePath, Minutes minutes) {
+    protected String processVoice(String filePath, Minutes minutes) {
         try {
             String audioProcessingUrl = flaskServerUrl + "/process_audio";
             String content = processFileToText(filePath, audioProcessingUrl);  // 텍스트 변환 요청
             minutes.setContent(content);
+            return content;
         } catch (Exception e) {
             log.error("음성 파일 텍스트 처리 중 오류 발생", e);
             throw new BaseException(MINUTES_FLASK_SERVER_COMMUNICATION_ERROR);
@@ -140,11 +139,12 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
     }
 
     // 사진 파일을 Flask 서버에 이미지 텍스트 변환 요청
-    protected void processPicture(String filePath, Minutes minutes) {
+    protected String processPicture(String filePath, Minutes minutes) {
         try {
             String imageProcessingUrl = flaskServerUrl + "/process_image";
             String content = processFileToText(filePath, imageProcessingUrl); // 이미지 텍스트 변환 요청
             minutes.setContent(content);
+            return content;
         } catch (Exception e) {
             log.error("사진 파일 업로드 또는 텍스트 처리 중 오류 발생", e);
             throw new BaseException(MINUTES_FLASK_SERVER_COMMUNICATION_ERROR);
@@ -341,17 +341,20 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
             throw new BaseException(USER_NOT_IN_PROJECT);
         }
 
-        String content;
-        if (minutes.getType().equals(MinutesType.MANUAL)) {
-            content = minutes.getContent();
-        } else {
-            content = extractTextFromContent(minutes.getContent(), minutes.getType());
-        }
-
-        return new MinutesInfoResult(minutes.getId(), minutes.getProject().getId(), minutes.getProject().getName(), minutes.getName(), content, minutes.getFilePath(), minutes.getSummary(), minutes.getType(), minutes.getCreatedAt());
+        return new MinutesInfoResult(
+                minutes.getId(),
+                project.getId(),
+                project.getName(),
+                minutes.getName(),
+                minutes.getClearContent(),
+                minutes.getFilePath(),
+                minutes.getSummary(),
+                minutes.getType(),
+                minutes.getCreatedAt()
+        );
     }
 
-    private String extractTextFromContent(String content, MinutesType type) {
+    private String extractClearContent(String content, MinutesType type) {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode rootNode = objectMapper.readTree(content);
