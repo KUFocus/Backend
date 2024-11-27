@@ -56,4 +56,16 @@ public class MinutesSearchController {
         minutesSearchService.saveSearchHistory(minutesId);
         return new BaseResponse<>(SUCCESS);
     }
+
+    @DeleteMapping("/history/{historyId}")
+    @Operation(summary = "검색 기록 삭제", description = "특정 검색 기록을 삭제합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "삭제 성공")
+    })
+    public BaseResponse<Void> deleteSearchHistory(@PathVariable Long historyId) {
+        log.info("검색 기록 삭제 요청: historyId={}", historyId);
+        minutesSearchService.deleteSearchHistory(historyId);
+        return new BaseResponse<>(SUCCESS);
+    }
+
 }
