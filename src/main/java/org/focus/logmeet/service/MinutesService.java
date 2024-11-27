@@ -106,24 +106,12 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
         minutes.setStatus(TEMP);  // 임시 상태로 설정
         minutes.setFilePath(filePath);
 
-        String content = null;
+        String content = switch (fileType) {
+            case VOICE -> processVoice(filePath, minutes);
+            case PICTURE -> processPicture(filePath, minutes);
+            case MANUAL -> "";
+        };
 
-        switch (fileType) {
-            case VOICE:
-                content = processVoice(filePath, minutes);
-                break;
-
-            case PICTURE:
-                content = processPicture(filePath, minutes);
-                break;
-
-            case MANUAL:
-                content = ""; // 수동 입력은 별도 처리
-                break;
-
-            default:
-                throw new BaseException(MINUTES_TYPE_NOT_FOUND);
-        }
         if (content != null) {
             String clearContent = extractClearContent(content, fileType);
             minutes.setClearContent(clearContent);
