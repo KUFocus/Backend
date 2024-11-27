@@ -228,7 +228,8 @@ class MinutesServiceTest {
 
         MinutesService spyMinutesService = spy(minutesService);
 
-        doReturn("테스트를 위한 회의 내용입니다.").when(spyMinutesService).processFileToText(anyString(), anyString());
+        doReturn("{\"content\": \"테스트를 위한 회의 내용입니다.\"}")
+                .when(spyMinutesService).processFileToText(anyString(), anyString());
 
         when(minutesRepository.save(any(Minutes.class))).thenAnswer(invocation -> {
             Minutes testMinutes = invocation.getArgument(0);
@@ -253,7 +254,8 @@ class MinutesServiceTest {
 
         MinutesService spyMinutesService = spy(minutesService);
 
-        doReturn("테스트를 위한 회의 내용입니다.").when(spyMinutesService).processFileToText(anyString(), anyString());
+        doReturn("{\"content\": \"테스트를 위한 회의 내용입니다.\"}")
+                .when(spyMinutesService).processFileToText(anyString(), anyString());
 
         when(minutesRepository.save(any(Minutes.class))).thenAnswer(invocation -> {
             Minutes testMinutes = invocation.getArgument(0);
@@ -270,17 +272,6 @@ class MinutesServiceTest {
         verify(minutesRepository).save(any(Minutes.class));
     }
 
-
-    @Test
-    @DisplayName("잘못된 파일 타입 업로드 시 예외 발생")
-    void uploadFile_InvalidFileType_ThrowsException() {
-        // given
-        String filePath = "file/path";
-
-        // when & then
-        BaseException exception = assertThrows(BaseException.class, () -> minutesService.createMinutes(filePath));
-        assertEquals(MINUTES_TYPE_NOT_FOUND, exception.getStatus());
-    }
 
     @Test
     @DisplayName("파일 텍스트 변환 성공")
@@ -678,18 +669,13 @@ class MinutesServiceTest {
         // given
         Long minutesId = 1L;
         String voiceContent = """
-        {
-            "segments": [
-                {"speaker": "A", "text": "안녕하세요"},
-                {"speaker": "B", "text": "반갑습니다"},
-                {"speaker": "A", "text": "오늘 회의를 시작하겠습니다"}
-            ]
-        }
-        """;
+        A: 안녕하세요
+        B: 반갑습니다
+        A: 오늘 회의를 시작하겠습니다""";
 
         when(mockMinutes.getId()).thenReturn(minutesId);
         when(mockMinutes.getProject()).thenReturn(mockProject);
-        when(mockMinutes.getContent()).thenReturn(voiceContent);
+        when(mockMinutes.getClearContent()).thenReturn(voiceContent);
         when(mockMinutes.getType()).thenReturn(MinutesType.VOICE);
         when(mockMinutes.getName()).thenReturn("회의록 제목");
         when(mockMinutes.getFilePath()).thenReturn("file/path");
@@ -711,11 +697,11 @@ class MinutesServiceTest {
     void getMinutes_Success_PictureType() {
         // given
         Long minutesId = 2L;
-        String pictureContent = "{\"text\": \"사진 내용입니다.\"}";
+        String pictureContent = "사진 내용입니다.";
 
         when(mockMinutes.getId()).thenReturn(minutesId);
         when(mockMinutes.getProject()).thenReturn(mockProject);
-        when(mockMinutes.getContent()).thenReturn(pictureContent);
+        when(mockMinutes.getClearContent()).thenReturn(pictureContent);
         when(mockMinutes.getType()).thenReturn(MinutesType.PICTURE);
         when(mockMinutes.getName()).thenReturn("사진 회의록 제목");
         when(mockMinutes.getFilePath()).thenReturn("file/path");
@@ -732,28 +718,6 @@ class MinutesServiceTest {
         assertEquals("사진 내용입니다.", result.getContent());
     }
 
-    @Test
-    @DisplayName("회의록 정보 조회 성공 - JSON에 텍스트 필드가 없는 경우")
-    void getMinutes_MissingTextField_ReturnsEmpty() {
-        // given
-        Long minutesId = 2L;
-        String contentWithoutTextField = "{\"some_other_field\": \"데이터\"}";
-
-        when(mockMinutes.getId()).thenReturn(minutesId);
-        when(mockMinutes.getProject()).thenReturn(mockProject);
-        when(mockMinutes.getContent()).thenReturn(contentWithoutTextField);
-        when(mockMinutes.getType()).thenReturn(MinutesType.VOICE);
-        when(minutesRepository.findById(minutesId)).thenReturn(Optional.of(mockMinutes));
-        when(userProjectRepository.findByUserAndProject(any(), any())).thenReturn(Optional.of(mock(UserProject.class)));
-
-        // when
-        MinutesInfoResult result = minutesService.getMinutes(minutesId);
-
-        // then
-        assertNotNull(result);
-        assertEquals(minutesId, result.getMinutesId());
-        assertEquals("", result.getContent());
-    }
 
     @Test
     @DisplayName("MANUAL 타입의 회의록 정보 조회 성공")
@@ -764,7 +728,7 @@ class MinutesServiceTest {
 
         when(mockMinutes.getId()).thenReturn(minutesId);
         when(mockMinutes.getProject()).thenReturn(mockProject);
-        when(mockMinutes.getContent()).thenReturn(manualContent);
+        when(mockMinutes.getClearContent()).thenReturn(manualContent);
         when(mockMinutes.getType()).thenReturn(MinutesType.MANUAL);
         when(minutesRepository.findById(minutesId)).thenReturn(Optional.of(mockMinutes));
         when(userProjectRepository.findByUserAndProject(any(), any())).thenReturn(Optional.of(mock(UserProject.class)));
@@ -815,23 +779,6 @@ class MinutesServiceTest {
         assertEquals(BaseExceptionResponseStatus.USER_NOT_IN_PROJECT, exception.getStatus());
     }
 
-    @Test
-    @DisplayName("회의록 정보 조회 시 JSON 포맷 오류 예외 발생")
-    void getMinutes_InvalidJsonFormat_ThrowsException() {
-        // given
-        Long minutesId = 1L;
-        String invalidJson = "{invalid json}";
-
-        when(mockMinutes.getProject()).thenReturn(mockProject);
-        when(mockMinutes.getContent()).thenReturn(invalidJson);
-        when(mockMinutes.getType()).thenReturn(MinutesType.VOICE);
-        when(minutesRepository.findById(minutesId)).thenReturn(Optional.of(mockMinutes));
-        when(userProjectRepository.findByUserAndProject(any(), any())).thenReturn(Optional.of(mock(UserProject.class)));
-
-        // when & then
-        BaseException exception = assertThrows(BaseException.class, () -> minutesService.getMinutes(minutesId));
-        assertEquals(BaseExceptionResponseStatus.MINUTES_INVALID_JSON_FORMAT, exception.getStatus());
-    }
 
     @Test
     @DisplayName("회의록 리스트 조회 성공")
