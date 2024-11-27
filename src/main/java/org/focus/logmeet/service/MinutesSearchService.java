@@ -21,8 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.MINUTES_NOT_FOUND;
-import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.USER_NOT_AUTHENTICATED;
+import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
 
 @Slf4j
 @Service
@@ -76,18 +75,25 @@ public class MinutesSearchService {
             throw new BaseException(USER_NOT_AUTHENTICATED);
         }
 
+        boolean alreadyExists = minutesSearchHistoryRepository.existsByUserIdAndMinutesId(currentUser.getId(), minutesId);
+        if (alreadyExists) {
+            log.info("기존 검색 기록 갱신: userId={}, minutesId={}", currentUser.getId(), minutesId);
+            minutesSearchHistoryRepository.deleteByUserIdAndMinutesId(currentUser.getId(), minutesId);
+        }
+
+        List<MinutesSearchHistory> userHistories = minutesSearchHistoryRepository.findByUserIdOrderByCreatedAtAsc(currentUser.getId());
+        if (userHistories.size() >= 10) {
+            MinutesSearchHistory oldestHistory = userHistories.get(0);
+            minutesSearchHistoryRepository.delete(oldestHistory);
+            log.info("가장 오래된 검색 기록 삭제: historyId={}", oldestHistory.getId());
+        }
+
         Minutes minutes = minutesRepository.findById(minutesId)
                 .orElseThrow(() -> new BaseException(MINUTES_NOT_FOUND));
 
-        // 검색 기록 저장
-        SearchHistoryResult historyResult = SearchHistoryResult.builder()
-                .title(minutes.getName())
-                .projectName(minutes.getProject().getName())
-                .build();
-
         MinutesSearchHistory searchHistory = MinutesSearchHistory.builder()
                 .user(currentUser)
-                .results(List.of(historyResult))
+                .minutes(minutes)
                 .build();
 
         minutesSearchHistoryRepository.save(searchHistory);
@@ -101,16 +107,36 @@ public class MinutesSearchService {
             throw new BaseException(USER_NOT_AUTHENTICATED);
         }
 
-        List<MinutesSearchHistory> histories = minutesSearchHistoryRepository.findByUserId(currentUser.getId());
+        List<MinutesSearchHistory> histories = minutesSearchHistoryRepository.findByUserIdOrderByCreatedAtDesc(currentUser.getId());
 
         return histories.stream()
                 .map(history -> MinutesSearchHistoryResult.builder()
-                        .searchHistoryId(history.getId())
                         .searchDate(history.getCreatedAt())
-                        .results(history.getResults())
+                        .minutesId(history.getMinutes().getId())
+                        .title(history.getMinutes().getName())
+                        .projectName(history.getMinutes().getProject().getName())
                         .build())
                 .toList();
     }
+
+    @CurrentUser
+    public void deleteSearchHistory(Long historyId) {
+        User currentUser = CurrentUserHolder.get();
+        if (currentUser == null) {
+            throw new BaseException(USER_NOT_AUTHENTICATED);
+        }
+
+        MinutesSearchHistory history = minutesSearchHistoryRepository.findById(historyId)
+                .orElseThrow(() -> new BaseException(SEARCH_HISTORY_NOT_FOUND));
+
+        if (!history.getUser().getId().equals(currentUser.getId())) {
+            throw new BaseException(NOT_USER_HISTORY);
+        }
+
+        minutesSearchHistoryRepository.delete(history);
+        log.info("검색 기록 삭제 완료: historyId={}, userId={}", historyId, currentUser.getId());
+    }
+
 
 
     private String extractSnippet(String content, String query) {
