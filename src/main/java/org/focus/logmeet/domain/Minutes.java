@@ -30,6 +30,9 @@ public class Minutes extends BaseTimeEntity {
     @Column(columnDefinition = "TEXT")
     private String content;
 
+    @Column(columnDefinition = "TEXT")
+    private String clearContent;
+
     @Column(length = 2000)
     private String filePath;
 
