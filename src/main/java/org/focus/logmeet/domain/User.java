@@ -26,6 +26,9 @@ public class User extends BaseTimeEntity {
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserProject> userProjects;
 
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<MinutesSearchHistory> minutesSearchHistories;
+
     @Column(length = 50, nullable = false, unique = true)
     private String email;
 
