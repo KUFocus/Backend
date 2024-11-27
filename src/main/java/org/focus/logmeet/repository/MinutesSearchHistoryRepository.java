@@ -1,6 +1,5 @@
 package org.focus.logmeet.repository;
 
-import org.focus.logmeet.domain.MinutesSearch;
 import org.focus.logmeet.domain.MinutesSearchHistory;
 import org.springframework.data.jpa.repository.JpaRepository;
 
