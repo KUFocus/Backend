@@ -103,4 +103,7 @@ dependencies {
 	// JAXB (Base64 관련 경고 해결)
 	implementation 'javax.xml.bind:jaxb-api:2.3.1'
 	implementation 'org.glassfish.jaxb:jaxb-runtime:2.3.1'
+
+	// ElasticSearch
+	implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
 }
