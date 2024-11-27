@@ -25,7 +25,7 @@ public class MinutesSearchHistory extends BaseTimeEntity {
     @JoinColumn(name = "user_id")
     private User user;
 
-    @ElementCollection
-    @CollectionTable(name = "search_history_results", joinColumns = @JoinColumn(name = "history_id"))
-    private List<SearchHistoryResult> results;
+    @ManyToOne
+    @JoinColumn(name = "minutes_id")
+    private Minutes minutes;
 }
