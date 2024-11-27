@@ -62,7 +62,12 @@ public enum BaseExceptionResponseStatus implements ResponseStatus {
 
     // Schedule 오류
     SCHEDULE_NOT_FOUND(false, 8000, "존재하지 않는 스케줄입니다.", 404),
-    SCHEDULE_DATE_FORMAT_INVALID(false, 8001, "잘못된 날짜 형식입니다.", 400);
+    SCHEDULE_DATE_FORMAT_INVALID(false, 8001, "잘못된 날짜 형식입니다.", 400),
+
+    // Search 오류
+    SEARCH_HISTORY_NOT_FOUND(false, 9000, "존재하지 않는 검색 기록입니다.", 404),
+    NOT_USER_HISTORY(false, 9001, "현재 유저의 검색 기록이 아닙니다.", 403);
+
 
     private final boolean isSuccess;
     private final int code;
