@@ -16,9 +16,9 @@ public class MinutesDocument {
     @Id
     private Long id;
 
-    @Field(type = FieldType.Text, analyzer = "nori", searchAnalyzer = "standard")
+    @Field(type = FieldType.Text, analyzer = "nori", searchAnalyzer = "nori")
     private String title;
 
-    @Field(type = FieldType.Text, analyzer = "nori", searchAnalyzer = "standard")
+    @Field(type = FieldType.Text, analyzer = "nori", searchAnalyzer = "nori")
     private String content;
 }
