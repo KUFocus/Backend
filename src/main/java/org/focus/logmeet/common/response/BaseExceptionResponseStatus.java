@@ -56,6 +56,7 @@ public enum BaseExceptionResponseStatus implements ResponseStatus {
     MINUTES_TEXT_SUMMARY_API_CALL_FAILED(false, 6006, "텍스트 요약 API 호출을 실패했습니다.", 500),
     MINUTES_INVALID_JSON_FORMAT(false, 6007, "JSON 파싱 중 오류가 발생했습니다.", 500),
     MINUTES_UNSUPPORTED_TYPE(false, 6008, "파일 업로드는 VOICE 또는 PICTURE 타입만 허용됩니다.", 400),
+    MINUTES_SUMMARY_REQUEST_CONFLICT(false, 6009, "이미 사용한 요약 요청 키의 회의록 내용이 변경되었습니다.", 400),
 
     // S3 오류
     S3_CLIENT_CREATION_ERROR(false, 7000, "S3 클라이언트 생성 중 오류가 발생했습니다.", 500),

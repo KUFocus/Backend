@@ -24,6 +24,9 @@ import java.util.Collections;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.focus.logmeet.domain.enums.ProjectColor.PROJECT_6;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -129,7 +132,7 @@ class MinutesControllerTest {
     void summarizeText() throws Exception {
         // given
         MinutesSummarizeResult response = new MinutesSummarizeResult("Summarized text", Collections.emptyList());
-        when(minutesService.summarizeText(any(Long.class))).thenReturn(response);
+        when(minutesService.summarizeText(any(Long.class), isNull())).thenReturn(response);
 
         // when
         MvcResult result = mockMvc.perform(post("/minutes/1/summarize-text"))
@@ -142,6 +145,18 @@ class MinutesControllerTest {
 
         String content = result.getResponse().getContentAsString();
         assertThat(content).contains("\"success\":true");
+    }
+
+    @Test
+    @DisplayName("요약 요청의 중복 방지 키를 서비스에 전달한다")
+    void summarizeTextWithRequestKey() throws Exception {
+        MinutesSummarizeResult response = new MinutesSummarizeResult("요약", Collections.emptyList());
+        when(minutesService.summarizeText(1L, "request-1")).thenReturn(response);
+
+        mockMvc.perform(post("/minutes/1/summarize-text").header("Idempotency-Key", "request-1"))
+                .andExpect(status().isOk());
+
+        verify(minutesService).summarizeText(eq(1L), eq("request-1"));
     }
 
     @Test
