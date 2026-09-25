@@ -1,5 +1,7 @@
 package org.focus.logmeet.controller;
 
+import org.springframework.context.annotation.Profile;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -20,6 +22,7 @@ import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.SUCC
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/search")
+@Profile("!local-eval")
 public class MinutesSearchController {
     private final MinutesSearchService minutesSearchService;
 

@@ -1,5 +1,7 @@
 package org.focus.logmeet.service;
 
+import org.springframework.context.annotation.Profile;
+
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +26,7 @@ import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Profile("!local-eval")
 public class MinutesSearchService {
     private final MinutesSearchRepository minutesSearchRepository;
     private final MinutesSearchHistoryRepository minutesSearchHistoryRepository;
