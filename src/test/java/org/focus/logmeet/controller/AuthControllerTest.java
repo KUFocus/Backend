@@ -138,8 +138,8 @@ class AuthControllerTest {
 
         String expectedMessage = "email: 이메일을 입력해주세요.";
 
-        assertThat(jsonNodeNullEmail.path("result").asText()).contains(expectedMessage);
-        assertThat(jsonNodeEmptyEmail.path("result").asText()).contains(expectedMessage);
+        assertThat(jsonNodeNullEmail.path("message").asText()).contains(expectedMessage);
+        assertThat(jsonNodeEmptyEmail.path("message").asText()).contains(expectedMessage);
     }
 
     @Test
@@ -162,7 +162,7 @@ class AuthControllerTest {
 
         String expectedMessage = "email: 잘못된 이메일 양식입니다.";
 
-        assertThat(jsonNode.path("result").asText()).contains(expectedMessage);
+        assertThat(jsonNode.path("message").asText()).contains(expectedMessage);
     }
 
     @Test
@@ -194,8 +194,8 @@ class AuthControllerTest {
 
         String expectedMessage = "password: 비밀번호를 입력해주세요.";
 
-        assertThat(jsonNodeNullPassword.path("result").asText()).contains(expectedMessage);
-        assertThat(jsonNodeEmptyPassword.path("result").asText()).contains(expectedMessage);
+        assertThat(jsonNodeNullPassword.path("message").asText()).contains(expectedMessage);
+        assertThat(jsonNodeEmptyPassword.path("message").asText()).contains(expectedMessage);
 
     }
 
@@ -219,7 +219,7 @@ class AuthControllerTest {
 
         String expectedMessage = "password: 비밀번호는 최소 8자리 이상이며, 문자와 숫자를 포함해야 합니다.";
 
-        assertThat(jsonNode.path("result").asText()).contains(expectedMessage);
+        assertThat(jsonNode.path("message").asText()).contains(expectedMessage);
 
     }
 
@@ -243,7 +243,7 @@ class AuthControllerTest {
 
         String expectedMessage = "password: 비밀번호는 최소 8자리 이상이며, 문자와 숫자를 포함해야 합니다.";
 
-        assertThat(jsonNode.path("result").asText()).contains(expectedMessage);
+        assertThat(jsonNode.path("message").asText()).contains(expectedMessage);
     }
 
     @Test
@@ -275,8 +275,8 @@ class AuthControllerTest {
 
         String expectedMessage = "userName: 이름을 입력해주세요.";
 
-        assertThat(jsonNodeNullUserName.path("result").asText()).contains(expectedMessage);
-        assertThat(jsonNodeEmptyUserName.path("result").asText()).contains(expectedMessage);
+        assertThat(jsonNodeNullUserName.path("message").asText()).contains(expectedMessage);
+        assertThat(jsonNodeEmptyUserName.path("message").asText()).contains(expectedMessage);
     }
 
     @Test
@@ -299,7 +299,7 @@ class AuthControllerTest {
 
         String expectedMessage = "userName: 사용자 이름은 특수 문자를 제외한 모든 문자를 포함할 수 있으며, 최대 10자 이내여야 합니다.";
 
-        assertThat(jsonNode.path("result").asText()).contains(expectedMessage);
+        assertThat(jsonNode.path("message").asText()).contains(expectedMessage);
     }
 
     @Test
