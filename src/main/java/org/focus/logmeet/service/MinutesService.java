@@ -299,7 +299,8 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
                     .digest(value.getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256을 사용할 수 없습니다.", e);
+            log.error("요약 요청 식별값 생성 중 오류 발생", e);
+            throw new BaseException(MINUTES_TEXT_SUMMARY_ERROR);
         }
     }
 

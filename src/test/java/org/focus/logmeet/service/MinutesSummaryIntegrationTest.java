@@ -163,9 +163,8 @@ class MinutesSummaryIntegrationTest {
             for (int i = 0; i < 8; i++) {
                 results.add(pool.submit(() -> {
                     ready.countDown();
-                    if (!start.await(5, TimeUnit.SECONDS)) {
-                        throw new IllegalStateException("동시 요청 시작 시간 초과");
-                    }
+                    assertThat(start.await(5, TimeUnit.SECONDS))
+                            .as("동시 요청이 제한 시간 안에 시작되어야 한다").isTrue();
                     return summarize("parallel-request");
                 }));
             }
