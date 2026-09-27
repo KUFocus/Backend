@@ -23,4 +23,14 @@ public class MeetingIndexListener {
                     event.projectId(), event.minutesId(), e);
         }
     }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void delete(MeetingIndexDeleteRequested event) {
+        try {
+            client.delete(event.projectId(), event.minutesId());
+        } catch (BaseException e) {
+            log.error("회의록은 삭제됐지만 색인 삭제에 실패했습니다. 프로젝트 ID={}, 회의록 ID={}",
+                    event.projectId(), event.minutesId(), e);
+        }
+    }
 }

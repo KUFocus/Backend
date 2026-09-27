@@ -535,6 +535,7 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
         }
 
         minutesRepository.delete(minutes);
+        eventPublisher.publishEvent(new MeetingIndexDeleteRequested(projectId, minutesId));
         log.info("회의록 삭제 성공: minutesId={}", minutesId);
     }
 }

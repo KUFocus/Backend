@@ -193,4 +193,50 @@ class MeetingIndexIntegrationTest {
         verifyNoInteractions(indexClient);
         return id;
     }
+
+    @Test
+    void 회의록삭제커밋후에만색인을삭제한다() {
+        CurrentUserHolder.set(user);
+        new TransactionTemplate(transactions).executeWithoutResult(status -> {
+            minutesService.deleteMinutes(minutesId);
+            verifyNoInteractions(indexClient);
+        });
+        verify(indexClient).delete(project.getId(), minutesId);
+        assertThat(minutes.existsById(minutesId)).isFalse();
+    }
+
+    @Test
+    void 회의록삭제롤백시색인도유지한다() {
+        CurrentUserHolder.set(user);
+        new TransactionTemplate(transactions).executeWithoutResult(status -> {
+            minutesService.deleteMinutes(minutesId);
+            status.setRollbackOnly();
+        });
+        verifyNoInteractions(indexClient);
+        assertThat(minutes.existsById(minutesId)).isTrue();
+    }
+
+    @Test
+    void 색인삭제실패가확정된DB삭제를실패로응답하지않는다() {
+        CurrentUserHolder.set(user);
+        doThrow(new BaseException(MINUTES_FLASK_SERVER_COMMUNICATION_ERROR))
+                .when(indexClient).delete(project.getId(), minutesId);
+        assertThatCode(() -> minutesService.deleteMinutes(minutesId)).doesNotThrowAnyException();
+        verify(indexClient).delete(project.getId(), minutesId);
+        assertThat(minutes.existsById(minutesId)).isFalse();
+    }
+
+    @Test
+    void 리더가아니면회의록과색인삭제를거부한다() {
+        User member = users.save(User.builder().email(UUID.randomUUID() + "@example.test")
+                .name("일반 회원").password("unused").build());
+        memberships.save(UserProject.builder().user(member).project(project).role(Role.MEMBER)
+                .color(ProjectColor.PROJECT_1).build());
+        CurrentUserHolder.set(member);
+        assertThatThrownBy(() -> minutesService.deleteMinutes(minutesId))
+                .isInstanceOfSatisfying(BaseException.class,
+                        error -> assertThat(error.getStatus()).isEqualTo(USER_NOT_LEADER));
+        verifyNoInteractions(indexClient);
+        assertThat(minutes.existsById(minutesId)).isTrue();
+    }
 }

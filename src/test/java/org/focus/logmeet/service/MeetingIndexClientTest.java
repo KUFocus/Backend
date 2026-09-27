@@ -99,6 +99,45 @@ class MeetingIndexClientTest {
         server.verify();
     }
 
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(booleans = {true, false})
+    void 내부삭제요청은두식별자를전송하고반복삭제도성공한다(boolean deleted) {
+        server.expect(requestTo("http://ai.test/index_meeting"))
+                .andExpect(method(HttpMethod.DELETE))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(content().json("{\"projectId\":1,\"minutesId\":23}", true))
+                .andRespond(withSuccess("{\"projectId\":1,\"minutesId\":23,\"deleted\":" + deleted + "}", MediaType.APPLICATION_JSON));
+        assertThat(client.delete(1L, 23L).deleted()).isEqualTo(deleted);
+        server.verify();
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"", "{}", "{\"projectId\":2,\"minutesId\":23,\"deleted\":true}",
+            "{\"projectId\":1,\"minutesId\":24,\"deleted\":true}", "{\"projectId\":1,\"minutesId\":23}"})
+    void 잘못된삭제응답은실패로처리한다(String response) {
+        server.expect(requestTo("http://ai.test/index_meeting"))
+                .andRespond(withSuccess(response, MediaType.APPLICATION_JSON));
+        assertThatThrownBy(() -> client.delete(1L, 23L)).isInstanceOf(BaseException.class);
+        server.verify();
+    }
+
+    @Test
+    void 삭제서버실패를기존예외로전달하고재시도하지않는다() {
+        server.expect(requestTo("http://ai.test/index_meeting"))
+                .andRespond(withStatus(HttpStatus.SERVICE_UNAVAILABLE));
+        assertThatThrownBy(() -> client.delete(1L, 23L)).isInstanceOfSatisfying(BaseException.class,
+                error -> assertThat(error.getStatus()).isEqualTo(MINUTES_FLASK_SERVER_COMMUNICATION_ERROR));
+        server.verify();
+    }
+
+    @Test
+    void 잘못된삭제식별자는전송하지않는다() {
+        assertThatThrownBy(() -> client.delete(null, 23L)).isInstanceOf(BaseException.class);
+        assertThatThrownBy(() -> client.delete(1L, 0L)).isInstanceOf(BaseException.class);
+        server.verify();
+    }
+
     private void assertFailure() {
         assertThatThrownBy(() -> client.index(1L, 23L, text))
                 .isInstanceOfSatisfying(BaseException.class,

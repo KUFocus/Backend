@@ -5,6 +5,8 @@ import org.focus.logmeet.common.exception.BaseException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Component;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.web.client.RestTemplate;
 
 import java.nio.charset.StandardCharsets;
@@ -48,6 +50,28 @@ public class MeetingIndexClient {
             throw new BaseException(MINUTES_FLASK_SERVER_COMMUNICATION_ERROR);
         }
     }
+
+    public DeleteResult delete(Long projectId, Long minutesId) {
+        try {
+            if (projectId == null || projectId <= 0 || minutesId == null || minutesId <= 0) {
+                throw new IllegalArgumentException("회의록 색인 삭제 식별자가 올바르지 않습니다.");
+            }
+            DeleteResult result = restTemplate.exchange(indexUrl, HttpMethod.DELETE,
+                    new HttpEntity<>(new DeleteRequest(projectId, minutesId)), DeleteResult.class).getBody();
+            if (result == null || !projectId.equals(result.projectId()) || !minutesId.equals(result.minutesId())
+                    || result.deleted() == null) {
+                throw new IllegalStateException("회의록 색인 삭제 응답이 요청과 일치하지 않습니다.");
+            }
+            return result;
+        } catch (Exception e) {
+            log.error("회의록 색인 삭제 요청에 실패했습니다. 프로젝트 ID={}, 회의록 ID={}", projectId, minutesId, e);
+            throw new BaseException(MINUTES_FLASK_SERVER_COMMUNICATION_ERROR);
+        }
+    }
+
+    private record DeleteRequest(Long projectId, Long minutesId) {}
+
+    public record DeleteResult(Long projectId, Long minutesId, Boolean deleted) {}
 
     private record IndexRequest(Long projectId, Long minutesId, String text) {}
 
