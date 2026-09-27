@@ -116,4 +116,81 @@ class MeetingIndexIntegrationTest {
         publisher.publishEvent(new MeetingIndexRequested(project.getId(), minutesId, "원문"));
         verifyNoInteractions(indexClient);
     }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(value = MinutesType.class, names = {"VOICE", "PICTURE"})
+    void 파일회의록확정후추출텍스트를색인한다(MinutesType type) {
+        Long id = temporaryFile(type, "화자 없는 문장과 줄바꿈\n표 내용도  유지합니다.");
+        CurrentUserHolder.set(user);
+        new TransactionTemplate(transactions).executeWithoutResult(status -> {
+            minutesService.updateMinutesInfo(id, "확정 회의록", project.getId());
+            verifyNoInteractions(indexClient);
+        });
+        verify(indexClient).index(project.getId(), id, "화자 없는 문장과 줄바꿈\n표 내용도  유지합니다.");
+        Minutes saved = minutes.findById(id).orElseThrow();
+        assertThat(saved.getStatus()).isEqualTo(Status.ACTIVE);
+        assertThat(saved.getProject().getId()).isEqualTo(project.getId());
+    }
+
+    @Test
+    void 파일회의록확정이롤백되면색인하지않는다() {
+        Long id = temporaryFile(MinutesType.VOICE, "추출된 텍스트");
+        CurrentUserHolder.set(user);
+        new TransactionTemplate(transactions).executeWithoutResult(status -> {
+            minutesService.updateMinutesInfo(id, "취소할 확정", project.getId());
+            status.setRollbackOnly();
+        });
+        verifyNoInteractions(indexClient);
+        assertThat(minutes.findById(id).orElseThrow().getStatus()).isEqualTo(Status.TEMP);
+    }
+
+    @Test
+    void 추출텍스트가없으면응답JSON을대신색인하지않는다() {
+        Long id = temporaryFile(MinutesType.PICTURE, "  ");
+        CurrentUserHolder.set(user);
+        minutesService.updateMinutesInfo(id, "빈 추출 결과", project.getId());
+        verifyNoInteractions(indexClient);
+        assertThat(minutes.findById(id).orElseThrow().getStatus()).isEqualTo(Status.ACTIVE);
+    }
+
+    @Test
+    void 파일회의록확정재요청은색인을중복호출하지않는다() {
+        Long id = temporaryFile(MinutesType.VOICE, "추출된 텍스트");
+        CurrentUserHolder.set(user);
+        minutesService.updateMinutesInfo(id, "첫 확정", project.getId());
+        minutesService.updateMinutesInfo(id, "이름 수정", project.getId());
+        verify(indexClient, times(1)).index(project.getId(), id, "추출된 텍스트");
+        verifyNoMoreInteractions(indexClient);
+    }
+
+    @Test
+    void 파일회의록색인실패에도확정상태를유지한다() {
+        Long id = temporaryFile(MinutesType.PICTURE, "추출된 텍스트");
+        CurrentUserHolder.set(user);
+        doThrow(new BaseException(MINUTES_FLASK_SERVER_COMMUNICATION_ERROR))
+                .when(indexClient).index(anyLong(), anyLong(), anyString());
+        assertThatCode(() -> minutesService.updateMinutesInfo(id, "확정 회의록", project.getId()))
+                .doesNotThrowAnyException();
+        verify(indexClient).index(project.getId(), id, "추출된 텍스트");
+        assertThat(minutes.findById(id).orElseThrow().getStatus()).isEqualTo(Status.ACTIVE);
+    }
+
+    @Test
+    void 프로젝트접근권한이없으면파일회의록을확정하거나색인하지않는다() {
+        Long id = temporaryFile(MinutesType.VOICE, "추출된 텍스트");
+        Project other = projects.save(Project.builder().name("참여하지 않은 프로젝트").build());
+        CurrentUserHolder.set(user);
+        assertThatThrownBy(() -> minutesService.updateMinutesInfo(id, "확정 요청", other.getId()))
+                .isInstanceOfSatisfying(BaseException.class,
+                        error -> assertThat(error.getStatus()).isEqualTo(USER_NOT_IN_PROJECT));
+        verifyNoInteractions(indexClient);
+        assertThat(minutes.findById(id).orElseThrow().getStatus()).isEqualTo(Status.TEMP);
+    }
+
+    private Long temporaryFile(MinutesType type, String clearText) {
+        Long id = minutes.save(Minutes.builder().type(type).status(Status.TEMP)
+                .content("{\"text\":\"변환 서버 응답 JSON\"}").clearContent(clearText).build()).getId();
+        verifyNoInteractions(indexClient);
+        return id;
+    }
 }

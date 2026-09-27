@@ -327,11 +327,23 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
             throw new BaseException(USER_NOT_IN_PROJECT);
         }
 
+        boolean firstFileConfirmation = minutes.getStatus() == TEMP && minutes.getProject() == null
+                && (minutes.getType() == VOICE || minutes.getType() == PICTURE);
         minutes.setName(minutesName);
         minutes.setProject(project);
         minutes.setStatus(ACTIVE);  // ACTIVE 상태로 변경
 
         minutesRepository.save(minutes);
+
+        if (firstFileConfirmation) {
+            String sourceText = minutes.getClearContent();
+            if (sourceText != null && !sourceText.isBlank()) {
+                eventPublisher.publishEvent(new MeetingIndexRequested(project.getId(), minutes.getId(), sourceText));
+            } else {
+                log.warn("추출된 텍스트가 없어 회의록 색인을 건너뜁니다. 프로젝트 ID={}, 회의록 ID={}",
+                        project.getId(), minutes.getId());
+            }
+        }
 
         return new MinutesCreateResponse(minutes.getId(), project.getId());
     }
