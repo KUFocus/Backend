@@ -18,6 +18,7 @@ import org.focus.logmeet.repository.UserProjectRepository;
 import org.focus.logmeet.security.annotation.CurrentUser;
 import org.focus.logmeet.security.aspect.CurrentUserHolder;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -46,6 +47,7 @@ import static org.focus.logmeet.domain.enums.Status.TEMP;
 @RequiredArgsConstructor
 public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 최소화 필요
 
+    private final ApplicationEventPublisher eventPublisher;
     private final S3Service s3Service;
     private final MinutesRepository minutesRepository;
     private final ProjectRepository projectRepository;
@@ -335,6 +337,7 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
     }
 
     // 수동 입력된 회의록을 저장
+    @Transactional
     @CurrentUser
     public MinutesCreateResponse saveAndUploadManualEntry(String textContent, String minutesName, Long projectId) {
         log.info("직접 회의록 생성 시도: minutesName={}", minutesName);
@@ -359,6 +362,8 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
 
         // Minutes 객체 저장
         minutesRepository.save(minutes);
+
+        eventPublisher.publishEvent(new MeetingIndexRequested(project.getId(), minutes.getId(), textContent));
 
         log.info("직접 회의록 생성 성공: minutesName={}", minutesName);
 

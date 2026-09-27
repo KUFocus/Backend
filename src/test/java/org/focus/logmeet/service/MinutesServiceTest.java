@@ -58,6 +58,8 @@ class MinutesServiceTest {
     private RestTemplate restTemplate;
     @Mock
     private MinutesSummaryRequestRepository summaryRequestRepository;
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
     @InjectMocks
     private MinutesService minutesService;
 
