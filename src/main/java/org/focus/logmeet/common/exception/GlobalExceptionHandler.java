@@ -3,10 +3,9 @@ package org.focus.logmeet.common.exception;
 import lombok.extern.slf4j.Slf4j;
 import org.focus.logmeet.common.response.BaseExceptionResponseStatus;
 import org.focus.logmeet.common.response.BaseResponse;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.NoHandlerFoundException;
@@ -18,37 +17,37 @@ import java.util.stream.Collectors;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-    //Order 직접 명시 가능 @Order(0~n), 구체적 예외 클래스 순서로 처리
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public BaseResponse<String> handleValidationException(MethodArgumentNotValidException ex, WebRequest request) {
+    public ResponseEntity<BaseResponse<Void>> handleValidationException(MethodArgumentNotValidException ex, WebRequest request) {
         String errorMessages = ex.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .collect(Collectors.joining("; "));
-        return new BaseResponse<>(BaseExceptionResponseStatus.INVALID_INPUT_VALUE, errorMessages);
+        return errorResponse(BaseExceptionResponseStatus.INVALID_INPUT_VALUE, errorMessages);
     }
 
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(BaseException.class)
-    public BaseResponse<String> handleBaseException(BaseException ex, WebRequest request) {
-        return new BaseResponse<>(ex.getStatus(), ex.getMessage());
+    public ResponseEntity<BaseResponse<Void>> handleBaseException(BaseException ex, WebRequest request) {
+        return errorResponse(ex.getStatus(), ex.getMessage());
     }
-    @ResponseStatus(HttpStatus.NOT_FOUND)
+
     @ExceptionHandler(NoHandlerFoundException.class)
-    public BaseResponse<Void> handleNotFound(NoHandlerFoundException ex, WebRequest request) {
-        return new BaseResponse<>(BaseExceptionResponseStatus.NOT_FOUND);
+    public ResponseEntity<BaseResponse<Void>> handleNotFound(NoHandlerFoundException ex, WebRequest request) {
+        return errorResponse(BaseExceptionResponseStatus.NOT_FOUND, null);
     }
 
-    @ResponseStatus(HttpStatus.FORBIDDEN)
-    @ExceptionHandler(AccessDeniedException.class)
-    public BaseResponse<Void> handleAccessDenied(AccessDeniedException ex, WebRequest request) {
-        return new BaseResponse<>(BaseExceptionResponseStatus.FORBIDDEN);
+    @ExceptionHandler({AccessDeniedException.class, org.springframework.security.access.AccessDeniedException.class})
+    public ResponseEntity<BaseResponse<Void>> handleAccessDenied(Exception ex, WebRequest request) {
+        return errorResponse(BaseExceptionResponseStatus.FORBIDDEN, null);
     }
 
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(Exception.class)
-    public BaseResponse<Void> handleAllExceptions(Exception ex, WebRequest request) {
+    public ResponseEntity<BaseResponse<Void>> handleAllExceptions(Exception ex, WebRequest request) {
         log.error("예상치 못한 오류 발생: ", ex);
-        return new BaseResponse<>(BaseExceptionResponseStatus.SERVER_ERROR);
+        return errorResponse(BaseExceptionResponseStatus.SERVER_ERROR, null);
+    }
+
+    private ResponseEntity<BaseResponse<Void>> errorResponse(BaseExceptionResponseStatus status, String message) {
+        BaseResponse<Void> body = BaseResponse.error(status, message);
+        return ResponseEntity.status(body.getHttpStatus()).body(body);
     }
 }

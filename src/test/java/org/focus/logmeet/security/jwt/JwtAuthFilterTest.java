@@ -1,5 +1,11 @@
 package org.focus.logmeet.security.jwt;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.focus.logmeet.common.exception.BaseException;
+import org.focus.logmeet.common.exception.GlobalExceptionHandler;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import org.junit.jupiter.api.AfterEach;
@@ -18,13 +24,45 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.*;
 import static org.focus.logmeet.common.response.BaseExceptionResponseStatus.EXPIRED_TOKEN;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class JwtAuthFilterTest {
+
+    @RestController
+    static class AuthenticationErrorController {
+        @GetMapping("/test/auth-error")
+        public void error() {
+            throw new BaseException(INVALID_TOKEN, "다시 로그인해주세요.");
+        }
+    }
+
+    @Test
+    @DisplayName("JWT 필터와 MVC는 동일한 예외에 같은 상태와 JSON으로 응답한다")
+    void filterAndMvcShareErrorResponse() throws Exception {
+        when(jwtProvider.getHeaderToken(request))
+                .thenThrow(new BaseException(INVALID_TOKEN, "다시 로그인해주세요."));
+
+        jwtAuthFilter.doFilterInternal(request, response, filterChain);
+        var mvcResponse = MockMvcBuilders.standaloneSetup(new AuthenticationErrorController())
+                .setControllerAdvice(new GlobalExceptionHandler()).build()
+                .perform(get("/test/auth-error")).andReturn().getResponse();
+        var mapper = new ObjectMapper();
+        var filterBody = mapper.readTree(response.getContentAsByteArray());
+
+        assertThat(response.getStatus()).isEqualTo(401);
+        assertThat(mvcResponse.getStatus()).isEqualTo(response.getStatus());
+        assertThat(filterBody).isEqualTo(mapper.readTree(mvcResponse.getContentAsByteArray()));
+        assertThat(filterBody.path("message").asText()).isEqualTo("다시 로그인해주세요.");
+        assertThat(filterBody.path("httpStatus").asInt()).isEqualTo(401);
+        assertThat(filterBody.path("success").asBoolean()).isFalse();
+        assertThat(filterBody.has("result")).isFalse();
+        assertThat(response.getCharacterEncoding()).isEqualTo("UTF-8");
+        verifyNoInteractions(filterChain);
+    }
 
     @InjectMocks
     private JwtAuthFilter jwtAuthFilter;

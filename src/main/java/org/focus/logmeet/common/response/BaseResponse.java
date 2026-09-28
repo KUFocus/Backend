@@ -22,26 +22,27 @@ public class BaseResponse<T> {
     private final T result;
 
     public BaseResponse(T result) {
-        this.isSuccess = SUCCESS.getIsSuccess();
-        this.code = SUCCESS.getCode();
-        this.message = SUCCESS.getMessage();
-        this.httpStatus = SUCCESS.getHttpStatusCode();
-        this.result = result;
+        this(SUCCESS, SUCCESS.getMessage(), result);
     }
 
     public BaseResponse(BaseExceptionResponseStatus status, T result) {
+        this(status, status.getMessage(), result);
+    }
+
+    public BaseResponse(BaseExceptionResponseStatus status) {
+        this(status, status.getMessage(), null);
+    }
+
+    private BaseResponse(BaseExceptionResponseStatus status, String message, T result) {
         this.isSuccess = status.getIsSuccess();
         this.code = status.getCode();
-        this.message = status.getMessage();
+        this.message = message;
         this.httpStatus = status.getHttpStatusCode();
         this.result = result;
     }
 
-    public BaseResponse(BaseExceptionResponseStatus status) {
-        this.isSuccess = status.getIsSuccess();
-        this.code = status.getCode();
-        this.message = status.getMessage();
-        this.httpStatus = status.getHttpStatusCode();
-        this.result = null;
+    public static BaseResponse<Void> error(BaseExceptionResponseStatus status, String message) {
+        String errorMessage = message == null || message.isBlank() ? status.getMessage() : message;
+        return new BaseResponse<>(status, errorMessage, null);
     }
 }

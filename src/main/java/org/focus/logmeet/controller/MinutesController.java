@@ -67,9 +67,11 @@ public class MinutesController {
     @PostMapping("/{minutesId}/summarize-text")
     public BaseResponse<MinutesSummarizeResult> summarizeText(
             @Parameter(name = "minutesId", description = "요약할 회의록의 고유 ID", required = true)
-            @PathVariable Long minutesId) {
+            @PathVariable Long minutesId,
+            @Parameter(description = "재전송 시 동일하게 유지할 요청 키. 생략하면 회의록 내용으로 자동 생성합니다.")
+            @RequestHeader(value = "Idempotency-Key", required = false) String requestKey) {
         log.info("텍스트 요약 요청: minutesId={}", minutesId);
-        MinutesSummarizeResult summarizedText = minutesService.summarizeText(minutesId);
+        MinutesSummarizeResult summarizedText = minutesService.summarizeText(minutesId, requestKey);
         return new BaseResponse<>(summarizedText);
     }
 

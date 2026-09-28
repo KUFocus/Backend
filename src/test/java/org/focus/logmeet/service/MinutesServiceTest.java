@@ -10,6 +10,7 @@ import org.focus.logmeet.domain.enums.ProjectColor;
 import org.focus.logmeet.domain.enums.Role;
 import org.focus.logmeet.domain.enums.Status;
 import org.focus.logmeet.repository.MinutesRepository;
+import org.focus.logmeet.repository.MinutesSummaryRequestRepository;
 import org.focus.logmeet.repository.ProjectRepository;
 import org.focus.logmeet.repository.ScheduleRepository;
 import org.focus.logmeet.repository.UserProjectRepository;
@@ -55,6 +56,10 @@ class MinutesServiceTest {
     private ScheduleRepository scheduleRepository;
     @Mock
     private RestTemplate restTemplate;
+    @Mock
+    private MinutesSummaryRequestRepository summaryRequestRepository;
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
     @InjectMocks
     private MinutesService minutesService;
 
@@ -350,7 +355,7 @@ class MinutesServiceTest {
         summarizeResult.setSummarizedText("테스트를 했다고 합니다~");
         summarizeResult.setSchedules(Collections.singletonList(validSchedule));
 
-        when(minutesRepository.findById(minutesId)).thenReturn(Optional.of(mockMinutes));
+        when(minutesRepository.findByIdForSummary(minutesId)).thenReturn(Optional.of(mockMinutes));
         when(mockMinutes.getContent()).thenReturn(extractedText);
         when(mockMinutes.getProject()).thenReturn(mockProject);
         when(userProjectRepository.findByUserAndProject(any(), any())).thenReturn(Optional.of(mockUserProject));
@@ -389,7 +394,7 @@ class MinutesServiceTest {
         // given
         Long minutesId = 1L;
 
-        when(minutesRepository.findById(minutesId)).thenReturn(Optional.of(mockMinutes));
+        when(minutesRepository.findByIdForSummary(minutesId)).thenReturn(Optional.of(mockMinutes));
         when(mockMinutes.getProject()).thenReturn(mockProject);
         when(userProjectRepository.findByUserAndProject(any(), any())).thenReturn(Optional.empty());
 
@@ -414,7 +419,7 @@ class MinutesServiceTest {
         summarizeResult.setSummarizedText("잘못된 날짜를 입력했다고 합니다.");
         summarizeResult.setSchedules(Collections.singletonList(invalidSchedule));
 
-        when(minutesRepository.findById(minutesId)).thenReturn(Optional.of(mockMinutes));
+        when(minutesRepository.findByIdForSummary(minutesId)).thenReturn(Optional.of(mockMinutes));
         when(mockMinutes.getContent()).thenReturn(extractedText);
         when(mockMinutes.getProject()).thenReturn(mockProject);
         when(userProjectRepository.findByUserAndProject(any(), any())).thenReturn(Optional.of(mockUserProject));
@@ -439,7 +444,7 @@ class MinutesServiceTest {
 
         MinutesSummarizeResult summarizeResult = new MinutesSummarizeResult();
 
-        when(minutesRepository.findById(minutesId)).thenReturn(Optional.of(mockMinutes));
+        when(minutesRepository.findByIdForSummary(minutesId)).thenReturn(Optional.of(mockMinutes));
         when(mockMinutes.getContent()).thenReturn(extractedText);
         when(mockMinutes.getProject()).thenReturn(mockProject);
         when(userProjectRepository.findByUserAndProject(any(), any())).thenReturn(Optional.of(mockUserProject));
@@ -462,7 +467,7 @@ class MinutesServiceTest {
         String extractedText = "테스트를 위한 회의 내용입니다.";
         UserProject mockUserProject = mock(UserProject.class);
 
-        when(minutesRepository.findById(minutesId)).thenReturn(Optional.of(mockMinutes));
+        when(minutesRepository.findByIdForSummary(minutesId)).thenReturn(Optional.of(mockMinutes));
         when(mockMinutes.getContent()).thenReturn(extractedText);
         when(mockMinutes.getProject()).thenReturn(mockProject);
         when(userProjectRepository.findByUserAndProject(any(), any())).thenReturn(Optional.of(mockUserProject));
@@ -485,7 +490,7 @@ class MinutesServiceTest {
         String extractedText = "테스트를 위한 회의 내용입니다.";
         UserProject mockUserProject = mock(UserProject.class);
 
-        when(minutesRepository.findById(minutesId)).thenReturn(Optional.of(mockMinutes));
+        when(minutesRepository.findByIdForSummary(minutesId)).thenReturn(Optional.of(mockMinutes));
         when(mockMinutes.getContent()).thenReturn(extractedText);
         when(mockMinutes.getProject()).thenReturn(mockProject);
         when(userProjectRepository.findByUserAndProject(any(), any())).thenReturn(Optional.of(mockUserProject));

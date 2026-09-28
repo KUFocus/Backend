@@ -1,5 +1,7 @@
 package org.focus.logmeet.repository;
 
+import org.springframework.context.annotation.Profile;
+
 import org.focus.logmeet.domain.elasticsearch.MinutesDocument;
 import org.springframework.data.elasticsearch.annotations.Query;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
@@ -7,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
+@Profile("!local-eval")
 public interface MinutesSearchRepository extends ElasticsearchRepository<MinutesDocument, Long> {
     @Query("""
     {

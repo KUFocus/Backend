@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.focus.logmeet.common.exception.BaseException;
 import org.focus.logmeet.common.response.BaseExceptionResponseStatus;
 import org.focus.logmeet.common.response.BaseResponse;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.AntPathMatcher;
@@ -77,7 +76,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         response.setStatus(status.getHttpStatusCode());
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
-        BaseResponse<String> errorResponse = new BaseResponse<>(status, message);
+        BaseResponse<Void> errorResponse = BaseResponse.error(status, message);
         response.getWriter().write(new ObjectMapper().writeValueAsString(errorResponse));
     }
 

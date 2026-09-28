@@ -11,20 +11,26 @@ import org.focus.logmeet.domain.*;
 import org.focus.logmeet.domain.enums.MinutesType;
 import org.focus.logmeet.domain.enums.ProjectColor;
 import org.focus.logmeet.repository.MinutesRepository;
+import org.focus.logmeet.repository.MinutesSummaryRequestRepository;
 import org.focus.logmeet.repository.ProjectRepository;
 import org.focus.logmeet.repository.ScheduleRepository;
 import org.focus.logmeet.repository.UserProjectRepository;
 import org.focus.logmeet.security.annotation.CurrentUser;
 import org.focus.logmeet.security.aspect.CurrentUserHolder;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.*;
@@ -41,12 +47,15 @@ import static org.focus.logmeet.domain.enums.Status.TEMP;
 @RequiredArgsConstructor
 public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 최소화 필요
 
+    private final ApplicationEventPublisher eventPublisher;
     private final S3Service s3Service;
     private final MinutesRepository minutesRepository;
     private final ProjectRepository projectRepository;
     private final UserProjectRepository userProjectRepository;
     private final ScheduleRepository scheduleRepository;
     private final RestTemplate restTemplate;
+    private final MinutesSummaryRequestRepository summaryRequestRepository;
+    private final ObjectMapper summaryResultMapper = new ObjectMapper();
 
     @Value("${flask.server.url}")
     private String flaskServerUrl;
@@ -177,16 +186,26 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
         }
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     @CurrentUser
     public MinutesSummarizeResult summarizeText(Long minutesId) {
+        return summarizeText(minutesId, null);
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @CurrentUser
+    public MinutesSummarizeResult summarizeText(Long minutesId, String clientRequestKey) {
         log.info("텍스트 요약 시도: minutesId={}", minutesId);
         User currentUser = CurrentUserHolder.get();
         if (currentUser == null) {
             throw new BaseException(USER_NOT_AUTHENTICATED);
         }
 
-        Minutes minutes = minutesRepository.findById(minutesId)
+        if (clientRequestKey != null && !clientRequestKey.matches("[A-Za-z0-9._:-]{1,128}")) {
+            throw new BaseException(INVALID_INPUT_VALUE);
+        }
+
+        Minutes minutes = minutesRepository.findByIdForSummary(minutesId)
                 .orElseThrow(() -> new BaseException(MINUTES_NOT_FOUND));
 
 
@@ -196,7 +215,18 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
         }
 
         String extractedText = minutes.getContent();
+        String fingerprint = summaryFingerprint(project.getId() + "\n" + extractedText);
+        String requestKey = summaryFingerprint(clientRequestKey == null
+                ? "content:" + fingerprint : "request:" + clientRequestKey);
         try {
+            Optional<MinutesSummaryRequest> previous = summaryRequestRepository
+                    .findByMinutesIdAndRequestKey(minutesId, requestKey);
+            if (previous.isPresent()) {
+                if (!previous.get().getInputFingerprint().equals(fingerprint)) {
+                    throw new BaseException(MINUTES_SUMMARY_REQUEST_CONFLICT);
+                }
+                return summaryResultMapper.readValue(previous.get().getResponseJson(), MinutesSummarizeResult.class);
+            }
             String textSummarizationUrl = flaskServerUrl + "/summarize_text";
             URI uri = UriComponentsBuilder.fromHttpUrl(textSummarizationUrl)
                     .build().toUri();
@@ -245,6 +275,9 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
                             }
                         }
                     }
+                    summaryRequestRepository.save(MinutesSummaryRequest.builder()
+                            .minutes(minutes).requestKey(requestKey).inputFingerprint(fingerprint)
+                            .responseJson(summaryResultMapper.writeValueAsString(responseBody)).build());
                     return responseBody;
                 } else {
                     log.error("요약 API 응답에 'summary'가 없음: {}", responseBody);
@@ -259,6 +292,16 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
             throw e;
         } catch (Exception e) {
             log.error("텍스트 요약 중 오류 발생", e);
+            throw new BaseException(MINUTES_TEXT_SUMMARY_ERROR);
+        }
+    }
+
+    private String summaryFingerprint(String value) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                    .digest(value.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException e) {
+            log.error("요약 요청 식별값 생성 중 오류 발생", e);
             throw new BaseException(MINUTES_TEXT_SUMMARY_ERROR);
         }
     }
@@ -284,16 +327,29 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
             throw new BaseException(USER_NOT_IN_PROJECT);
         }
 
+        boolean firstFileConfirmation = minutes.getStatus() == TEMP && minutes.getProject() == null
+                && (minutes.getType() == VOICE || minutes.getType() == PICTURE);
         minutes.setName(minutesName);
         minutes.setProject(project);
         minutes.setStatus(ACTIVE);  // ACTIVE 상태로 변경
 
         minutesRepository.save(minutes);
 
+        if (firstFileConfirmation) {
+            String sourceText = minutes.getClearContent();
+            if (sourceText != null && !sourceText.isBlank()) {
+                eventPublisher.publishEvent(new MeetingIndexRequested(project.getId(), minutes.getId(), sourceText));
+            } else {
+                log.warn("추출된 텍스트가 없어 회의록 색인을 건너뜁니다. 프로젝트 ID={}, 회의록 ID={}",
+                        project.getId(), minutes.getId());
+            }
+        }
+
         return new MinutesCreateResponse(minutes.getId(), project.getId());
     }
 
     // 수동 입력된 회의록을 저장
+    @Transactional
     @CurrentUser
     public MinutesCreateResponse saveAndUploadManualEntry(String textContent, String minutesName, Long projectId) {
         log.info("직접 회의록 생성 시도: minutesName={}", minutesName);
@@ -318,6 +374,8 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
 
         // Minutes 객체 저장
         minutesRepository.save(minutes);
+
+        eventPublisher.publishEvent(new MeetingIndexRequested(project.getId(), minutes.getId(), textContent));
 
         log.info("직접 회의록 생성 성공: minutesName={}", minutesName);
 
@@ -477,6 +535,7 @@ public class MinutesService { //TODO: 현재 유저 정보 검증 로직 중복 
         }
 
         minutesRepository.delete(minutes);
+        eventPublisher.publishEvent(new MeetingIndexDeleteRequested(projectId, minutesId));
         log.info("회의록 삭제 성공: minutesId={}", minutesId);
     }
 }
